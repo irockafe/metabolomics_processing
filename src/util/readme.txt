@@ -1,1 +1,1 @@
-Here lie code that aren't that special, but get used a lot.
+Here lies code that aren't that special, but get used a lot.
