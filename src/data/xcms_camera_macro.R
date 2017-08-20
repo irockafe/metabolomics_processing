@@ -19,13 +19,13 @@ myAlign <- function () {
 	### Set your working directory under Windows, where your netCDF files are stored
 	### Organize samples in subdirectories according to their class names WT/GM, Sick/Healthy etc.
 	### Important: use "/" not "\"
-	myDir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/MTBLS315/uhplc_neg"
+	myDir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/raw/MTBLS315/uhplc_pos" 
 	#myClass1 = "cirrhosis"
 	#myClass2 = "liver_cancer"
 	xcms_feature_table = "xcms_result"
 	camera_feature_table = "xcms_camera_results.csv" 
-	polarity_mode = "negative"
-	nSlaves = 4
+	polarity_mode = "postitive"
+	# nSlaves = 4 # let xcms decide how many (maximum)
 	# These are parameters to set based on Siuzdak metanalysis
 	# 10.1038/nprot.2011.454	
 	ppm = 2.5
