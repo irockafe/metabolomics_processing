@@ -19,13 +19,21 @@ myAlign <- function () {
 	### Set your working directory under Windows, where your netCDF files are stored
 	### Organize samples in subdirectories according to their class names WT/GM, Sick/Healthy etc.
 	### Important: use "/" not "\"
-	myDir = "/home/irockafe/Dropbox (MIT)/Alm_Lab/projects/revolutionizing_healthcare/data/cirrhosis_v_liver_cancer/MTBLS105/cdf_test"
+	myDir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/MTBLS315/uhplc_neg"
 	#myClass1 = "cirrhosis"
 	#myClass2 = "liver_cancer"
 	xcms_feature_table = "xcms_result"
 	camera_feature_table = "xcms_camera_results.csv" 
-	polarity_mode = "positive"
+	polarity_mode = "negative"
 	nSlaves = 4
+	# These are parameters to set based on Siuzdak metanalysis
+	# 10.1038/nprot.2011.454	
+	ppm = 2.5
+	peak_width = c(5,20)
+	bw = 2
+	mzwid = 0.015
+	prefilter = c(3,5000)
+
 	### +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	### change working directory to your files, see +++ section
@@ -48,31 +56,28 @@ myAlign <- function () {
 	#		peakwidth = c(20,60), fitgauss = TRUE,
 	#		noise = 1000, mzdiff = -0.005, nSlaves=nSlaves 
 	#		)
-	xset <- xcmsSet()
-
+	xset <- xcmsSet(method="centWave", ppm=ppm, prefilter=prefilter,
+			peakwidth=peak_width, )
+	print("finished peak Detection!")
 	### print used files and memory usuage
 	xset
 
 	### Group peaks together across samples and show fancy graphics
 	### you can remove the sleep timer (silent run) or set it to 0.001
 	xset <- group(xset)
-
+	print("finished first group command!")
 	### calculate retention time deviations for every time
 	xset2 <- retcor(xset, family="s", plottype="m")
-
+	print("finished retcor!")
 	### Group peaks together across samples, set bandwitdh, change important m/z parameters here
 	### Syntax: group(object, bw = 30, minfrac = 0.5, minsamp= 1, mzwid = 0.25, max = 5, sleep = 0)
-	xset2 <- group(xset2, bw =10)
-
+	xset2 <- group(xset2, bw =2, mzwid=0.015)
+	print("finished second group command!")
 	### identify peak groups and integrate samples
 	xset3 <- fillPeaks(xset2)
-
+	print("filled peaks in!")
 	### print statistics
 	xset3
-
-	# Get number of samples
-	nSamples = length(xset3@filepaths)
-	print(nSamples)
 
 	### create report and save the result in EXCEL file, print 20 important peaks as PNG
 	#reporttab <- diffreport(object = xset3, 
@@ -91,7 +96,7 @@ myAlign <- function () {
 	### now do CAMERA
 	xset3_aligned = annotate(xset3,
 				 nSlave=4,
-				ppm=1.5,
+				ppm=ppm,
 			        mzabs=0.0001,
 				quick=FALSE,
 				polarity=polarity_mode,

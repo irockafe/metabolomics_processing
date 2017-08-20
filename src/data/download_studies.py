@@ -22,7 +22,7 @@ def download_data(ftp_path, study, cwd,  s3_path=None, to_s3=False):
     if to_s3:
         # check to see if already downloaded
         # prompt if they want to download it.
-        ls_s3 = 'nohup aws s3 ls {s3_path}{study}'.format(s3_path=s3_path,
+        ls_s3 = 'nohup aws s3 ls {s3_path}{study} &'.format(s3_path=s3_path,
                                                           study=study)
         check_bucket = subprocess.call(ls_s3, shell=True)
         if check_bucket == 0:  # aws returns 1 if error, zero otherwise
@@ -39,8 +39,19 @@ def download_data(ftp_path, study, cwd,  s3_path=None, to_s3=False):
     # Recursively download all files from ftp path into your directory
     # pipes.quote puts quotes around a path so that bash will
     # play nicely with whitespace and weird characters ik '()'
-    wget_command = 'nohup wget -r -nH --cut-dirs=6 {ftp} -P {dir}'.format(
-                                ftp=studies[study], dir=pipes.quote(directory))
+    # cut-dirs removes parts of the ftp url that would otherwise
+    # be assigned to directories (very annoying)
+    
+    # Always three entries when split [ftp:, '', 'hostname'] 
+    # that we handle with -nH, ftp://hostname.org/path/to/things/*
+    # Note that we also have a /*, so we exclude the last / when counting
+    # directorystructures to ignore
+    url_dirs_to_cut = len(ftp_path.split('/')[3:-1])
+    print url_dirs_to_cut
+    wget_command = 'nohup wget -r -nH --cut-dirs={cut} '\
+		   '{ftp} -P {dir} --no-verbose &'.format(
+                                ftp=ftp_path, dir=pipes.quote(directory),
+				cut=url_dirs_to_cut)
     subprocess.call(wget_command, shell=True)
     if to_s3:
         send_s3 = 'nohup aws s3 sync {dir} {s3_path}{study}'.format(
