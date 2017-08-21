@@ -25,7 +25,7 @@ myAlign <- function () {
 	xcms_feature_table = "xcms_result"
 	camera_feature_table = "xcms_camera_results.csv" 
 	polarity_mode = "postitive"
-	# nSlaves = 4 # let xcms decide how many (maximum)
+	nSlaves = 4 # let xcms decide how many (maximum)
 	# These are parameters to set based on Siuzdak metanalysis
 	# 10.1038/nprot.2011.454	
 	ppm = 2.5
