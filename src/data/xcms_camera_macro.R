@@ -19,16 +19,21 @@ myAlign <- function () {
 	### Set your working directory under Windows, where your netCDF files are stored
 	### Organize samples in subdirectories according to their class names WT/GM, Sick/Healthy etc.
 	### Important: use "/" not "\"
-	myDir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/raw/MTBLS315/uhplc_pos" 
+	# TODO: Print out file with parameters used, and 
+	# the output of the script, too. Timestamp them.
+	# output to where you call the script from
+	output_dir = getwd() 
+	#data_dir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/interim/mtbls72_test/pos/"
+	data_dir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/raw/MTBLS315/uhplc_pos"
+	polarity_mode = "positive"
 	#myClass1 = "cirrhosis"
 	#myClass2 = "liver_cancer"
 	xcms_feature_table = "xcms_result"
 	camera_feature_table = "xcms_camera_results.csv" 
-	polarity_mode = "postitive"
-	nSlaves = 4 # let xcms decide how many (maximum)
+	nSlaves = 8 # let xcms decide how many (maximum)
 	# These are parameters to set based on Siuzdak metanalysis
 	# 10.1038/nprot.2011.454	
-	ppm = 2.5
+	ppm = 4
 	peak_width = c(5,20)
 	bw = 2
 	mzwid = 0.015
@@ -37,11 +42,19 @@ myAlign <- function () {
 	### +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	### change working directory to your files, see +++ section
-	setwd(myDir)
-
-	### get working directory
-	(WD <- getwd())
-
+	setwd(data_dir)
+	# wrtie parameters to file
+	param_string = sprintf('ppm: %i
+peak_width: %s
+bw: %i
+mzwid: %.4f
+prefilter: %s
+', ppm, paste(paste(peak_width), collapse=" ")
+ , bw, mzwid, 
+paste(paste(prefilter), collapse=" ") 
+)
+	params_file = paste(output_dir, '/xcms_params.txt', sep='')
+	write(param_string, file=params_file)
 	### load the packages
 	library(xcms)
 	library(CAMERA)
@@ -60,24 +73,35 @@ myAlign <- function () {
 			peakwidth=peak_width, )
 	print("finished peak Detection!")
 	### print used files and memory usuage
-	xset
 
 	### Group peaks together across samples and show fancy graphics
 	### you can remove the sleep timer (silent run) or set it to 0.001
 	xset <- group(xset)
 	print("finished first group command!")
+	print(xset)
+	saveRDS(xset, paste(output_dir, '/xset.Rdata', sep=''))
 	### calculate retention time deviations for every time
-	xset2 <- retcor(xset, family="s", plottype="m")
+	# allow 5% missing values in retcor, or 1 value. whichever is higher
+	# This way if you're rocking 400 samples, you might still find 
+	# "well-behaved peaks"
+	missing_val_allowed <- max(1, floor(nrow(xset@phenoData)*0.05))
+	xset2 <- retcor(xset, family="s", plottype="m",
+		missing=missing_val_allowed)
 	print("finished retcor!")
 	### Group peaks together across samples, set bandwitdh, change important m/z parameters here
 	### Syntax: group(object, bw = 30, minfrac = 0.5, minsamp= 1, mzwid = 0.25, max = 5, sleep = 0)
 	xset2 <- group(xset2, bw =2, mzwid=0.015)
+	saveRDS(xset2, paste(output_dir, '/xset2.Rdata', sep=''))
 	print("finished second group command!")
 	### identify peak groups and integrate samples
 	xset3 <- fillPeaks(xset2)
 	print("filled peaks in!")
 	### print statistics
-	xset3
+	print(xset3)
+	setwd(output_dir)
+	xcms_peaklist = peakTable(xset3, filebase=xcms_feature_table) 
+	write.csv(xcms_peaklist, paste(xcms_feature_table,ppm, sep='_'))
+	# Write to file
 
 	### create report and save the result in EXCEL file, print 20 important peaks as PNG
 	#reporttab <- diffreport(object = xset3, 
@@ -94,19 +118,18 @@ myAlign <- function () {
 	print("Finished xcms, open by yourself the file myAlign.tsv and pictures in myAlign_eic")
 
 	### now do CAMERA
-	xset3_aligned = annotate(xset3,
-				 nSlave=4,
-				ppm=ppm,
-			        mzabs=0.0001,
-				quick=FALSE,
-				polarity=polarity_mode,
-				)
-					
+	#xset3_aligned = annotate(xset3,
+	#			 nSlave=4,
+	#			ppm=ppm,
+	#		        mzabs=0.0001,
+	#			quick=FALSE,
+	#			polarity=polarity_mode,
+	#			)		
 
 	# Generate result
-	peaklist <- getPeaklist(xset3_aligned)	
+	#peaklist <- getPeaklist(xset3_aligned)	
 	# Save results
-	write.csv(peaklist, file=camera_feature_table)
+	#write.csv(peaklist, file=camera_feature_table)
 }
 
 ### gives CPU, system, TOTAL time in seconds
