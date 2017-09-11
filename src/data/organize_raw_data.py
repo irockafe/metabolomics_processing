@@ -10,11 +10,13 @@ import argparse
 # The file's name is 'organize_data.tab'
 # First line is:
 #     PATH {tab} repo_name/path/to/data 
-# We need to use a relative path starting with repo_name because
+# We need to use a relative path starting with the git repo_name because
 # you're testing stuff on multiple computers, and paths change.
+#
 # All other lines:
 #     dir_name {tab} mv_command_1 {tab} mv_command_1 {tab} ...
 
+# Each line (after the first line) of the summary file contains move commands that will organize the data
 # Can imagine finding all the organize_data.tab files and running them
 # fairly easily (use find, then iterate through each file with this script.
 
@@ -64,6 +66,9 @@ for row_num, vals in df.iterrows():
                       ' Continuting...\n'.format(dir=dir_name)
         # Run the mv commands
         for val in vals[1:]:
+            # if NaN, skip it
+            if pd.isnull(val):
+                continue
             files = glob.glob(val)
             print files
             for fname in files:

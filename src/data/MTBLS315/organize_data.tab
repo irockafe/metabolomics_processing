@@ -1,8 +1,0 @@
-# gives path to raw data, and directory, 
-# plus files to be moved into that directory. 
-# If multiple commands needed, simply add more tabs. 
-# pandas will do it just fine
-
-PATH	revo_healthcare/data/raw/MTBLS315/
-uhplc_pos	*_P.mzML
-uhplc_neg	*_N.mzML
