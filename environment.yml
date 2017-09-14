@@ -23,10 +23,12 @@ dependencies:
 - r-digest=0.6.12=r3.3.2_0
 - r-futile.logger=1.4.1=r3.3.2_0
 - r-futile.options=1.0.0=r3.3.2_0
+- r-getopt=1.20.0=r3.3.2_0
 - r-ggplot2=2.2.1=r3.3.2_0
 - r-htmltools=0.3=r3.3.2_0
 - r-knitr=1.12.3=r3.3.2_0
 - r-lambda.r=1.1.7=r3.3.2_0
+- r-optparse=1.3.2=r3.3.2_0
 - r-rann=2.5=r3.3.2_0
 - r-scales=0.4.1=r3.3.2_1
 - r-snow=0.4_1=r3.3.2_0
