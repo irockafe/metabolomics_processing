@@ -258,8 +258,8 @@ extra\t%i
     library(xcms)
     library(snowfall)
     library(BiocParallel)
-    # set the number of cores
-    register(MulticoreParam(4))
+    # TODO - Learn to set the number of cores
+    #register(MulticoreParam(4))
                              
     # Detect peaks
     xset <- xcmsSet(method=detection_method, ppm=ppm, prefilter=prefilter,
@@ -366,7 +366,7 @@ if (is.character(xcms_params$polarity_mode) && is.character(args$polarity)){
     }
 } 
 
-# TODO - Done -test for presets
+# Done -test for presets
 # Done - test for full summary file
 # Done - fails for missing items - test for partial summary file
 # Done - test for summary file and preset
