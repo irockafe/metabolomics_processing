@@ -1,0 +1,53 @@
+Two datasets covering potential for differential diagnosis (Malaria vs. fever
+using serum) and diagnosing hard-to-detect diseases (Alzheimers/cognitive impairment vs. Elderly).
+
+Malaria set: plasma, 61 samples (30 malaria, 31 non-malarial fever). 
+   plasma, uplc, C18 column, QTOF-MS. 30 minute chromatography.
+
+Alzheimers set: Nested case-control, predicting development of Alzheimers or
+   other cognitive impairment within two years of blood sampling, from a population 
+   of elderly without alzheimers/cognitive impairment. 
+   254 patients, 72 develop alzheimers, 182 controls.
+   Uncertain how class-imbalance is affecting us. 
+   Plasma. uplc, C18 column, Orbitrap 13 minute chromatography.
+
+*--------------------
+Figures
+
+mz_rt_scatter.pdf
+   Shows that we might be able to speed up chromatography using a small window
+   of retention time.
+   The 50% of all features are concentrated in 
+   a 300 sec. retention time window from ~750-1050sec (between red lines). Maybe we can
+   classify using 1/5 the chromatography time? (300/1500seconds).  
+   TODO: Try to make that plot next.  
+
+malaria_vs_fever_roc.pdf
+   Shows we can classify diseases with "the same" systemic effect (fever)
+   using untargeted metabolomics.
+   Uses Random forest, 1000 estimators, cross validated 50 times 
+   (0.7:0.3, train:test).
+
+malaria_true_vs_null.pdf
+   Shows that model isn't BS. Just because we have 6000 features doesn't
+   mean you can effectively classify a random shuffling of class-labels.
+   AUCs are from 5 shuffles of the data, 50 iterations of cross-validation
+   0.7:0.3
+
+malaria_rt_slice_roc.pdf
+   Using 20% of the retention time, a slice between 750 and 1050sec,
+   we can classify just as well as if we used all of it. 
+   (ROC curves are the same as in malaria_vs_fever_roc.pdf).
+   
+ 
+alzheimers_roc.pdf
+   Same as malaria roc-curve.
+
+alzheimers_true_vs_null.pdf
+   Same as malaria true-vs-null
+
+alzheimers_rt_slice_roc.pdf
+   Using 18% of the retention time, a slice between 550 and 670, 
+   have almost the same classification ability (AUC 0.82 vs 0.83)
+   as using the whole dataset.
+    

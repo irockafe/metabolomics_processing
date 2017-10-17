@@ -1,0 +1,9 @@
+### Peak Detection Parameters	
+bw	2
+poop	37
+prefilter	10 60
+method	centWave
+
+### Peak-grouping parameters	
+
+### Shennanigans

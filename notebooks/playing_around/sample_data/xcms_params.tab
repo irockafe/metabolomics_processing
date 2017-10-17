@@ -1,0 +1,20 @@
+### General Parameters
+data_dir	/home/irockafe/Dropbox (MIT)/Alm_Lab/projects/revo_healthcare/notebooks/playing_around/sample_data
+polarity_mode	positive
+### Peak Detection Parameters
+peak_picking	centWave
+ppm	30
+peak_width	10 60
+prefilter	0 0
+
+### Peak-grouping parameters
+bw	2
+mzwid	0.0250
+minfrac	0
+minsamp	5
+
+### retention-correction parameters
+retcor_method	loess
+missing	1
+extra	1
+

@@ -19,9 +19,6 @@ myAlign <- function () {
 	### Set your working directory under Windows, where your netCDF files are stored
 	### Organize samples in subdirectories according to their class names WT/GM, Sick/Healthy etc.
 	### Important: use "/" not "\"
-	# TODO: Print out file with parameters used, and 
-	# the output of the script, too. Timestamp them.
-	# output to where you call the script from
 	output_dir = getwd() 
 	#data_dir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/interim/mtbls72_test/pos/"
 	data_dir = "/home/ubuntu/users/isaac/projects/revo_healthcare/data/raw/MTBLS315/uhplc_pos"

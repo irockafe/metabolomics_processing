@@ -1,0 +1,16 @@
+### Peak Detection Parameters
+peak_picking	centWave
+ppm
+peak_width
+prefilter
+
+### Peak-grouping parameters
+bw
+mzwid
+minfrac	0
+minsamp	2
+
+### retention-correction parameters
+retcor_method	loess
+missing
+extra
