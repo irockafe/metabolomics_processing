@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+### This is a default from the datacarpentry repo. Might be useful in
+### future, but currently doesn't work
 import os
 import click
 import logging
