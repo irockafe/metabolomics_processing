@@ -1,5 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import mwtab
+# scikit
+from sklearn import preprocessing
+
+# My code
+import data.mwtab_fxns as my_mwtab
 
 
 def prevalence_threshold(df, threshold=0.5):
@@ -45,4 +51,56 @@ def correct_dilution_factor(X, plot=False):
     # broadcast correctly to divide column-wise
     X_pqn = np.divide(X, dilution_factors[:, np.newaxis])
     return X_pqn
+
+
+def mwtab_to_feature_table(mwtab_path):
+    '''
+    GOAL:
+       Given an mwtab file, get the feature table, class labels,
+       and metadata from that file
+    INPUT:
+        mwtab_path - path to file
+    OUTPUT:
+        df: pandas dataframe (samples, features)
+        y: class labels (encoded as numbers)
+        metadata_df: pandas dataframe containing metadata from mwtab
+            (samples x factors)
+    '''
+    # Get metadata
+    mwtfile_gen = mwtab.read_files(mwtab_path)
+    mwtfile = next(mwtfile_gen)
+    metadata_df = my_mwtab.factors_to_df(mwtfile)
+    df = my_mwtab.get_feature_table(mwtfile)
+    assert(metadata_df.index == df.index).all()
+    print 'df shape', df.shape
+    print 'metadata shape', metadata_df.shape
+
+    # convert classes to numbers
+    le = preprocessing.LabelEncoder()
+    le.fit(metadata_df['Disease'])
+    y = le.transform(metadata_df['Disease'])
+
+    return df, y, metadata_df
+
+
+def standard_preprocessing(X):
+    '''
+    GOAL: Correct for dilution (pqn-normalize), impute missing
+        values as 1/2 minimum, scale using median and IQR
+    INPUT:
+        Feature table (samples, features)
+    OUTPUT:
+        numpy matrix (samples, features) after dilution factor correction,
+        missing value imputation, and scaling using median and IQR
+    '''
+    # TODO: Add this as part of a pipeline
+    x_pqn = correct_dilution_factor(X)
+    min_vals = x_pqn.min(axis=1).min() / 2
+    x_pqn_filled_halfmin = x_pqn.fillna(value=min_vals)
+    x_pqn_filled_halfmin_scaled = (preprocessing.RobustScaler()
+                                   .fit_transform(x_pqn_filled_halfmin)
+                                   )
+
+    return x_pqn_filled_halfmin_scaled
+
 #

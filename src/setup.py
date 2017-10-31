@@ -7,5 +7,5 @@ setup(name='revo_healthcare',
       author='Isaac Rockafellow',
       author_email='isaac.rockafellow@gmail.com',
       license='MIT',
-      packages=['project_fxns', 'data'],
+      packages=['project_fxns', 'data', 'visualization'],
       zip_safe=False)

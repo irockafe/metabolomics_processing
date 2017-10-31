@@ -6,26 +6,26 @@ from matplotlib.ticker import NullFormatter
 from sklearn.metrics import roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.utils import shuffle
 
 from scipy import interp
 
 import pickle
 
+# My code
+import visualization.viz as viz
 
-def roc_curve_cv(X, y, clf, cross_val,
-                 path='/home/irockafe/Desktop/roc.pdf',
-                 save=False, plot=True):
+
+def get_tpr_fpr(X, y, clf, cross_val):
     '''
-    PURPOSE:
-        Creates an ROC curve
+    GOAL:
+        Get the stats to plot an ROC curve
     INPUT:
         X - (samples x features) numpy array
         y - (samles,) numpy array
         clf - classifier to use
         cross_val - cross-validation strategy to use
-        path- where to dump a pdf of the cross-validated ROC curve
     '''
-
     t1 = time.time()
     # collect vals for the ROC curves
     tpr_list = []
@@ -48,49 +48,83 @@ def roc_curve_cv(X, y, clf, cross_val,
             print('{perc}% done! {time}s elapsed'.format(
                  perc=100*float(i)/cross_val.n_iter, time=(time.time() - t1))
                  )
-
-    # get mean tpr and fpr
-    mean_tpr = np.mean(tpr_list, axis=0)
-    # make sure it ends up at 1.0
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(auc_list)
-
-    if plot:
-        # plot mean auc
-        plt.plot(mean_fpr, mean_tpr,
-                 label='Mean ROC - AUC = %0.2f $\pm$ %0.2f' % (mean_auc,
-                                                               std_auc),
-                 lw=5, color='b')
-
-        # plot luck-line
-        plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-                 label='Luck', alpha=0.5)
-
-        # plot 1-std
-        std_tpr = np.std(tpr_list, axis=0)
-        tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-        tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-        plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey',
-                         alpha=0.2, label=r'$\pm$ 1 stdev')
-
-        plt.xlim([-0.05, 1.05])
-        plt.ylim([-0.05, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('ROC curve, {iters}'.format(iters=cross_val.n_iter) +
-                  ' iterations of {cv} cross validation'.format(
-                    cv='{train}:{test}'.format(test=cross_val.test_size,
-                                               train=(1-cross_val.test_size))
-                                                               )
-                  )
-        plt.legend(loc="lower right")
-
-        if save:
-            plt.savefig(path,  format='pdf')
-
-        plt.show()
     return tpr_list, auc_list, mean_fpr
+
+
+def roc_curve_cv(X, y, clf, cross_val, color='blue',
+                 path='/home/irockafe/Desktop/roc.pdf',
+                 save=False, plot=False,
+                 ):
+    '''
+    PURPOSE:
+        Creates an ROC curve
+    INPUT:
+        X - (samples x features) numpy array
+        y - (samles,) numpy array
+        clf - classifier to use
+        cross_val - cross-validation strategy to use
+        color - color to plot ROC curve
+        path- where to dump a pdf of the cross-validated ROC curve
+    '''
+    tpr_list, auc_list, mean_fpr = get_tpr_fpr(X, y, clf, cross_val)
+    # Return the stuff you can use to plot
+    print 'Plottttt!'
+    my_plt = viz.roc_curve(tpr_list, mean_fpr, auc_list,
+                           cross_val, path, color=color)
+    if plot:
+        my_plt.show()
+
+    return my_plt
+
+
+def roc_curve_cv_null(X, y, clf, cross_val, num_shuffles=5, color='black',
+                      path='/home/irockafe/Desktop.roc.pdf',
+                      save=False, plot=True,
+                      ):
+    '''
+    PURPOSE:
+        Creates a null ROC curve by shuffling class labels
+    INPUT:
+        X - (samples x features) numpy array
+        y - (samles,) numpy array
+        clf - classifier to use (scikit)
+        cross_val - cross-validation strategy to use (scikit crossvalidation
+            object)
+        num_shuffles - number of times to shuffle class labels
+        color - color to plot the ROC curve
+        path- where to dump a pdf of the cross-validated ROC curve
+    '''
+    tpr_list, auc_list, mean_fpr = get_tpr_fpr(X, y, clf, cross_val)
+    # Return the stuff you can use to plot
+    # shuffle y lots of times
+    # collect tpr and fpr rates from each fold and shuffle
+    # Then plot the mean of them all
+    null_tpr_list = []
+    null_auc_list = []
+    for i in range(0, num_shuffles):
+        # Iterate through the shuffled y vals and repeat with appropriate params
+        # Retain the auc vals for final plotting of distribution
+        y_shuffle = shuffle(y)
+        cross_val.y = y_shuffle
+        cross_val.y_indices = y_shuffle
+        print ('Number of differences b/t original and' +
+               'shuffle: {num}'.format(num=(y == cross_val.y).sum())
+               )
+        # Get auc values for number of iterations
+        mean_tpr_null, auc_list_null, mean_fpr_null = get_tpr_fpr(X,
+                                                                  y_shuffle,
+                                                                  clf,
+                                                                  cross_val)
+        null_tpr_list += mean_tpr_null
+        null_auc_list += auc_list_null
+
+    my_plt = viz.roc_curve(null_tpr_list, mean_fpr_null, null_auc_list,
+                           cross_val, path, color=color)
+    if save:
+        my_plt.savefig(path, format='pdf')
+    if plot:
+        my_plt.show()
+    return my_plt
 
 
 def rt_slice(df, rt_bounds):

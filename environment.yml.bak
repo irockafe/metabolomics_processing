@@ -236,12 +236,14 @@ dependencies:
   - itsdangerous==0.24
   - jupyter-client==5.1.0
   - jupyter-core==4.3.0
+  - lxml==4.0.0
   - mwtab==0.1.2
   - nb-anacondacloud==1.4.0
   - nb-conda==2.2.0
   - nb-conda-kernels==2.1.0
   - prompt-toolkit==1.0.15
   - pyqi==0.3.2
+  - revo-healthcare==0.1
   - schema==0.6.6
   - werkzeug==0.10.4
 prefix: /home/irockafe/miniconda2/envs/isaac_revo_healthcare

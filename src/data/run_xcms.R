@@ -25,7 +25,7 @@ parser <- add_option(parser, c('--summaryfile', '-s'), type='character',
    'you are confused'))
 parser <- add_option(parser, c('--path', '-p'), type='character',
 		     default=NULL,
-		     help=paste('Path to your data'))
+		     help=paste('Path to your data (single directory)'))
 parser <- add_option(parser, c('--polarity'), type='character',
                               default=NULL,
                      help=paste('polarity mode of MS used - Required.'))
@@ -107,7 +107,8 @@ char_to_numeric <- function(char) {
 
 get_params <- function(path, char_to_numeric) {
    # INPUT: tab-delim file of 
-   # space-delimited values 
+   # space-delimited values. Meaning that if you want c(20,60), 
+   # You should input "20 60"	
    # OUTPUT: A labeled list with each label from the first column
    # of the file. Each value, character or numeric, from the second column
    # It will accept vectors as space-delimited entries in the second column 
@@ -148,7 +149,7 @@ get_params <- function(path, char_to_numeric) {
 
 # Code to run xcms
 run_xcms = function(data_dir, xcms_params, polarity_mode,
-           # Optional params below. To set them, includ
+           # Optional params below. To set them, include
            # a summary file or use a preset
            # peak detection params
            detection_method='centWave', ppm=25, 
@@ -159,13 +160,16 @@ run_xcms = function(data_dir, xcms_params, polarity_mode,
            retcor_method='loess', missing=1, extra=1)
            {
     # INPUT - data_dir, a path to your data in one directory
-    #   xcms_params - a named-list containing xcms parameters
+    #    xcms_params - a named-list containing xcms parameters
     #       It's origin is from a preset value or a summary file
-    #   polarity_mode, 'positive' or 'negative'          
+    #       parsed through the function get_params() 
+    #    polarity_mode, 'positive' or 'negative'          
     # FUNCTION - Runs xcms with the supplied parameters
-    #   doing a group-retcor-group pass
+    #    doing a group-retcor-group pass
     # OUTPUT - A feature table, retcor deviation plot, and xcmsSet
-    #   objects after each grouping stage of xcms
+    #    objects after each grouping stage of xcms
+    #    output xcmsSet incase you want to repeat the group-retcor-group
+    #    again (TODO: not implemented)
 
     # CALL - To call this function, use
     # run_xcms(data_dir, xcms_params, polarity_mode)
@@ -174,7 +178,7 @@ run_xcms = function(data_dir, xcms_params, polarity_mode,
 
 
     # override default params if present in parameters
-    # 
+    # TODO: learn how to loop over entry-names 
     if (!is.null(xcms_params$detection_method )){
         detection_method<-xcms_params$detection_method
     }
