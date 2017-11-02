@@ -23,9 +23,9 @@ parser <- add_option(parser, c('--summaryfile', '-s'), type='character',
    'You can then fill in parameters as you like.',
    'See the xcms documentation for defaults or if',
    'you are confused'))
-parser <- add_option(parser, c('--path', '-p'), type='character',
+parser <- add_option(parser, c('--output', '-o'), type='character',
 		     default=NULL,
-		     help=paste('Path to your data (single directory)'))
+		     help=paste('Path to output data (single directory)'))
 parser <- add_option(parser, c('--polarity'), type='character',
                               default=NULL,
                      help=paste('polarity mode of MS used - Required.'))

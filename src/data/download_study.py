@@ -65,13 +65,10 @@ def download_data(study, ftp_path=None):
     # get local_path and s3_path (if exists)
     user_settings = get_user_settings()
     s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
-    print('s3_path\n' + s3_path)
     local_path = user_settings.loc['local_path'].to_string(index=False,
                                                            header=False)
-    print('\n\nlocal path\n' + local_path)
     directory = '{local}/data/raw/{study}'.format(local=local_path,
                                                   study=study)
-    print('directory',  directory)
     try:
         os.mkdir(directory)
     except OSError:
@@ -79,26 +76,38 @@ def download_data(study, ftp_path=None):
               'I think that means you downloaded ' +
               'these files previously. Going to try to download from S3\n' +
               '-'*20)
-    # Check if study already in s3
-        if s3_path:
-            # check if bucket exists
-            ls_s3 = 'nohup aws s3 ls {s3_path}/raw/{study}/ &'.format(
-                     s3_path=s3_path, study=study)
-            check_bucket = subprocess.call(ls_s3, shell=True)
-            print '\ns3 status', check_bucket
-            raise he
-            if check_bucket == 0: # aws returns 0 if it found the bucket
-                print('Bucket for that study already exists. Downloading from S3' +
-                      'If the S3 bucket is corrupted or needs to be updated, ' +
-                      'Please delete the bucket on S3')
-                # Download from S3
-                sync = 'nohup aws s3 sync {s3_path}/raw/{study}'.format(
-                       s3_path=s3_path, study=study)
+    # Check if study already in s3, if so, download it from there
+    # instead of the internets
+    if s3_path:
+        # check if bucket exists
+	ls_s3 = 'aws s3 ls {s3_path}raw/{study}'.format(
+						s3_path=s3_path,
+						study=study)
+	print 'ls_s3 ', ls_s3
+	check_bucket = subprocess.call(ls_s3, shell=True)
+	print 'check_bucket (0 is present, 1 is absent)', check_bucket
+	if check_bucket == 0: # Bucket exists
+	    # sync bucket
+	    sync = ('nohup aws s3 sync {s3}raw/{study} '.format(
+			s3=s3_path, study=study) +
+		    '{dir}'.format(dir=directory)
+		    )
+	    print 'sync  command', sync
+	    subprocess.call(sync, shell=True)
+	else:
+	    print 'Couldnt find bucket. Gotta download from database'
+    
+    else:
+        # TODO:
+	#Download via links (define a couple functions for each) 
+    	# TODO - This seems like a bulky, ugly function right now
+	#    I should probably check_bucket_exists as its own function
+ 	#    
     # Download files
     # if ftp_path, just do the ftp thing
     # if mtbls is prefix, download_mtlbs()
     # if ST is prefix of study, download_workbench()
     pass
 
-download_data('MTBLS105')
+download_data('poop')
 #
