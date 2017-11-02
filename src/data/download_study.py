@@ -162,56 +162,6 @@ def make_dir(study):
     return directory
 
 
-def download_data(study):
-    '''
-    Given study name (MTLBS or ST), output ftp link.
-    '''
-    # get local_path and s3_path (if exists)
-    user_settings = get_user_settings()
-    s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
-    local_path = user_settings.loc['local_path'].to_string(index=False,
-                                                           header=False)
-    directory = '{local}/data/raw/{study}'.format(local=local_path,
-                                                  study=study)
-    try:
-        os.mkdir(directory)
-    except OSError:
-        print('\n' + '-' * 20 + '\n' + 'directory already exists ' +
-              'I think that means you downloaded ' +
-              'these files previously. Going to try to download from S3\n' +
-              '-'*20)
-    # Check if study already in s3, if so, download it from there
-    # instead of the internets
-    if s3_path:
-        bucket_exists = s3_bucket_exists(s3_path, study)
-        # check if bucket exists
-        if bucket_exists:
-            # sync bucket
-            sync = ("nohup aws s3 sync '{s3}raw/{study}' ".format(
-                s3=s3_path, study=study) +
-                "'{dir}'".format(dir=directory)
-                )
-            print 'sync  command', sync
-            print ('Download from S3 - if you want to re-download dataset' +
-                   ' please delete the S3 bucket (future humans, please ' +
-                   'make this better)')
-            subprocess.call(sync, shell=True)
-        else:
-            print 'Couldnt find bucket. Gotta download from database'
-
-    else:
-        # TODO:
-        # Download via links (define a couple functions for each)
-        # TODO - This seems like a bulky, ugly function right now
-        #    I should probably check_bucket_exists as its own function
-        #
-        # Download files
-        # if ftp_path, just do the ftp thing
-        # if mtbls is prefix, download_mtlbs()
-        # if ST is prefix of study, download_workbench()
-        pass
-
-
 def download_ftp(ftp_path, output_dir):
     # Recursively download all files from ftp path into your directory
     # pipes.quote puts quotes around a path so that bash will
