@@ -56,6 +56,22 @@ def get_user_settings():
     return user_settings
 
 
+def s3_bucket_exists(s3_path, study):
+    # Test if bucket exists on S3 based on s3_path string and
+    # study string and sync if it does
+     
+    # check if bucket exists
+    ls_s3 = 'aws s3 ls {s3_path}raw/{study}'.format(
+    					s3_path=s3_path,
+       					study=study)
+    print 'ls_s3 ', ls_s3
+    check_bucket = subprocess.call(ls_s3, shell=True)
+    if check_bucket == 0:
+        return True
+    else:
+        return False
+
+
 def download_data(study, ftp_path=None):
     '''
     Download data. If in S3, get it from there.
@@ -79,23 +95,18 @@ def download_data(study, ftp_path=None):
     # Check if study already in s3, if so, download it from there
     # instead of the internets
     if s3_path:
+        bucket_exists = s3_bucket_exists(s3_path, study)
         # check if bucket exists
-	ls_s3 = 'aws s3 ls {s3_path}raw/{study}'.format(
-						s3_path=s3_path,
-						study=study)
-	print 'ls_s3 ', ls_s3
-	check_bucket = subprocess.call(ls_s3, shell=True)
-	print 'check_bucket (0 is present, 1 is absent)', check_bucket
-	if check_bucket == 0: # Bucket exists
-	    # sync bucket
-	    sync = ('nohup aws s3 sync {s3}raw/{study} '.format(
-			s3=s3_path, study=study) +
-		    '{dir}'.format(dir=directory)
-		    )
-	    print 'sync  command', sync
-	    subprocess.call(sync, shell=True)
-	else:
-	    print 'Couldnt find bucket. Gotta download from database'
+        if bucket_exists:
+            # sync bucket
+            sync = ('nohup aws s3 sync {s3}raw/{study} '.format(
+        		s3=s3_path, study=study) +
+        	    '{dir}'.format(dir=directory)
+        	    )
+            print 'sync  command', sync
+            subprocess.call(sync, shell=True)
+        else:
+            print 'Couldnt find bucket. Gotta download from database'
     
     else:
         # TODO:
