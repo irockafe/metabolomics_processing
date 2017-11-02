@@ -246,6 +246,7 @@ if s3_exists:  # sync from s3 and exit script
 ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
 download_ftp(ftp_path, output_dir)
 # sync to aws
-s3_sync_to_aws(s3_path, args.study, output_dir)
+if s3_path:  # Assumes that will return None if no S3 specified
+    s3_sync_to_aws(s3_path, args.study, output_dir)
 
 #
