@@ -69,8 +69,15 @@ def get_s3_path(study):
     s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
     return s3_path
 
+def s3_sync_to_aws(s3_path, study, output_dir):
+    sync = ("nohup aws s3 sync '{dir}' '{s3}raw/{study}' ".format(
+            s3=s3_path, study=study, dir=output_dir) 
+            )
+    print ('\n\nUploading data to S3 here \n{s3}'.format(s3=sync))
+    subprocess.call(sync, shell=True)
 
-def s3_sync(s3_path, study, output_dir):
+
+def s3_sync_to_local(s3_path, study, output_dir):
     sync = ("nohup aws s3 sync '{s3}raw/{study}' ".format(
             s3=s3_path, study=study) +
             "'{dir}'".format(dir=output_dir)
@@ -127,15 +134,16 @@ def get_ftp(study, ftp_mtbls, ftp_mwb):
     '''
     given a study name from mtbls or mwb, get the ftp link
     '''
-    if 'MTBLS' == study[0:3]:
+    if 'MTBLS' == study[0:5]:
         ftp_path = get_mtbls_ftp(study, ftp_mtbls)
-    if 'ST' == study[0:1]:
+        return ftp_path
+    elif 'ST' == study[0:2]:
         ftp_path = get_workbench_ftp(study, ftp_mwb)
+        return ftp_path
     else:
         raise NameError('Code only accepts Metabolights IDs (MTBLS...) and' +
                         'Metabolomics Workbench Study IDs (ST...) project names'
                         )
-    return ftp_path
 
 
 def make_dir(study):
@@ -231,11 +239,13 @@ output_dir = make_dir(args.study)
 s3_path = get_s3_path(args.study)
 s3_exists = s3_bucket_exists(s3_path, args.study)
 if s3_exists:  # sync from s3 and exit script
-    s3_sync(s3_path, args.study, output_dir)
+    s3_sync_to_local(s3_path, args.study, output_dir)
     exit()
 
 # If didn't find s3 bucket, get ftp link and download from database
 ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
 download_ftp(ftp_path, output_dir)
+# sync to aws
+s3_sync_to_aws(s3_path, args.study, output_dir)
 
 #
