@@ -29,6 +29,34 @@ user_settings.tab: src/get_user_info.py
 #	mv environment.yml environment.yml.bak;\
 #	conda env export > environment.yml
 
+
+#########################
+# Testing things out		#
+#########################
+feces = data/raw/feces
+
+$(feces)/.dirstamp: 
+	$(shell mkdir $(feces) && touch $@)
+
+
+#########################
+# MTBLS315		#
+#########################
+study := "MTBLS315"
+dir :=  "data/raw/$(study)/"
+# Download data and send to S3
+# TODO make this more re-usable, so only have to set the study ID
+$(dir)/.dirstamp:
+	mkdir -p $(dir) && touch $@
+
+$(dir): src/data/download_study.py
+	python $< --study MTBLS315
+
+# Organize raw data into folders
+$(dir): src/data/organize_raw_data.py organize_data_mtbls315.tab
+	python $< --summary-file data/raw/organize_data_summary_files/organize_data_mtbls315.tab
+
+
 #########################
 # ST000450		#
 #########################
