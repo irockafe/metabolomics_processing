@@ -1,0 +1,8 @@
+Make by default only runs the first command, then any dependencies it finds.
+
+In general, that means that makefiles tend to execute commands from the bottom up - meaning that the first command encountered, finds dependencies, dependencies of dependencies, ...etc. until it hits the end of the dependency tree, then executes that command, moves up tree and executes next, until everything is executed.
+
+
+Line continuation with \
+
+

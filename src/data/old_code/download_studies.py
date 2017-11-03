@@ -41,8 +41,8 @@ def download_data(ftp_path, study, cwd,  s3_path=None, to_s3=False):
     # play nicely with whitespace and weird characters ik '()'
     # cut-dirs removes parts of the ftp url that would otherwise
     # be assigned to directories (very annoying)
-    
-    # Always three entries when split [ftp:, '', 'hostname'] 
+
+    # Always three entries when split [ftp:, '', 'hostname']
     # that we handle with -nH, ftp://hostname.org/path/to/things/*
     # Note that we also have a /*, so we exclude the last / when counting
     # directorystructures to ignore
