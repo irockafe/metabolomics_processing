@@ -69,9 +69,10 @@ def get_s3_path(study):
     s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
     return s3_path
 
+
 def s3_sync_to_aws(s3_path, study, output_dir):
     sync = ("nohup aws s3 sync '{dir}' '{s3}raw/{study}' ".format(
-            s3=s3_path, study=study, dir=output_dir) 
+            s3=s3_path, study=study, dir=output_dir)
             )
     print ('\n\nUploading data to S3 here \n{s3}'.format(s3=sync))
     subprocess.call(sync, shell=True)
@@ -147,6 +148,10 @@ def get_ftp(study, ftp_mtbls, ftp_mwb):
 
 
 def make_dir(study):
+    ''' Make a directory in the data/raw/ folder.
+    also, create a file, .dirstamp, so that your makefile has
+    something to look for.
+    '''
     user_settings = get_user_settings()
     local_path = user_settings.loc['local_path'].to_string(index=False,
                                                            header=False)
@@ -154,6 +159,9 @@ def make_dir(study):
                                                   study=study)
     try:
         os.mkdir(directory)
+        make_dirstamp = "touch '{dir}/.dirstamp'".format(
+            dir=directory)
+        subprocess.call(make_dirstamp, shell=True)
     except OSError:
         print('\n' + '-' * 20 + '\n' + 'directory already exists ' +
               'I think that means you downloaded ' +
