@@ -3,21 +3,11 @@
 #################################################################################
 # GLOBALS                                                                       #
 #################################################################################
-
-PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUCKET = almlab.bucket/isaac/revo_healthcare_data
-PROFILE = default
-PROJECT_NAME = revo_healthcare
-PYTHON_INTERPRETER = python
-
-ifeq (,$(shell which conda))
-HAS_CONDA=False
-else
-HAS_CONDA=True
-endif
+all: raw_data user_settings.tab
 
 user_settings.tab: src/get_user_info.py
 	python $<
+
 
 
 #################################################################################
@@ -33,28 +23,23 @@ user_settings.tab: src/get_user_info.py
 #########################
 # Testing things out		#
 #########################
-feces = data/raw/feces
+# How the fuck do you make directories?
+# maybe just go and make a new makefile with the only goal being 
+# to create a directory
 
-$(feces)/.dirstamp: 
-	$(shell mkdir $(feces) && touch $@)
+###########################
+# MTBLS315                #
+###########################
+# Download MTBLS315 and sync to S3
+study := MTBLS315
+dir := data/raw/
+raw_data: $(dir)/$(study)/.dirstamp
+# Download data and create .dirstamp if it doesn't already exist
+# TODO - how to avoid deleting .dirstamp when I clean up raw
+# directory after processing data?
+$(dir)/$(study)/.dirstamp: src/data/download_study.py
+	python $< --study $(study) 
 
-
-#########################
-# MTBLS315		#
-#########################
-study := "MTBLS315"
-dir :=  "data/raw/$(study)/"
-# Download data and send to S3
-# TODO make this more re-usable, so only have to set the study ID
-$(dir)/.dirstamp:
-	mkdir -p $(dir) && touch $@
-
-$(dir): src/data/download_study.py
-	python $< --study MTBLS315
-
-# Organize raw data into folders
-$(dir): src/data/organize_raw_data.py organize_data_mtbls315.tab
-	python $< --summary-file data/raw/organize_data_summary_files/organize_data_mtbls315.tab
 
 
 #########################
