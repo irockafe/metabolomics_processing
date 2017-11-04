@@ -1,0 +1,19 @@
+### General Parameters
+data_dir
+polarity_mode
+### Peak Detection Parameters
+detection_method	centWave
+ppm
+peak_width
+prefilter
+
+### Peak-grouping parameters
+bw
+mzwid
+minfrac	0
+minsamp	2
+
+### retention-correction parameters
+retcor_method	loess
+missing
+extra
