@@ -1,0 +1,2 @@
+Phony files - things that will always be evaluated (make thinks they're always out of date)
+   Can be useful, since if phony target is prerequisite, it will always be run (maybe you want to check disk space before doing something wild?)

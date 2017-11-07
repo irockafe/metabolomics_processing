@@ -5,6 +5,7 @@
 #################################################################################
 all: raw_data user_settings.tab
 
+# Get user-specific settings - local path and S3 bucket
 user_settings.tab: src/get_user_info.py
 	python $<
 
