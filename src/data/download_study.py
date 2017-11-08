@@ -4,6 +4,8 @@ import argparse
 import pipes
 import urllib2
 import pandas as pd
+# My code
+import project_fxns.project_fxns as project_fxns
 
 # Use this script to download files from Metabolights IDs or
 # Metabolomics workbench Study IDs.
@@ -22,7 +24,7 @@ metabolights_ftp = ('ftp://ftp.ebi.ac.uk/pub/databases/' +
                     'metabolights/studies/public/')
 metabolomics_workbench_ftp = ('ftp://www.metabolomicsworkbench.org/Studies/')
 
-
+"""
 def walk_up(target):
     # Walk up directory until find target file/directory
     pwd = os.getcwd()
@@ -34,8 +36,8 @@ def walk_up(target):
         os.chdir('..')
         out = walk_up(target)
     return out
-
-
+"""
+"""
 def get_user_settings():
     '''
     GOAL - walk up directories until you find user_settings.tab,
@@ -47,7 +49,7 @@ def get_user_settings():
                                 header=None, index_col=0,
                                 dtype=str)
     return user_settings
-
+"""
 
 def s3_bucket_exists(s3_path, study):
     # Test if bucket exists on S3 based on s3_path string and
@@ -63,12 +65,12 @@ def s3_bucket_exists(s3_path, study):
     else:
         return False
 
-
+"""
 def get_s3_path(study):
     user_settings = get_user_settings()
     s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
     return s3_path
-
+"""
 
 def s3_sync_to_aws(s3_path, study, output_dir):
     sync = ("nohup aws s3 sync '{dir}' '{s3}raw/{study}' ".format(
@@ -152,7 +154,7 @@ def make_dir(study):
     also, create a file, .dirstamp, so that your makefile has
     something to look for.
     '''
-    user_settings = get_user_settings()
+    user_settings = project_fxns.get_user_settings()
     local_path = user_settings.loc['local_path'].to_string(index=False,
                                                            header=False)
     directory = '{local}/data/raw/{study}'.format(local=local_path,
@@ -194,7 +196,7 @@ def download_ftp(ftp_path, output_dir):
 
 output_dir = make_dir(args.study)
 # Check if there is an s3 bucket and sync from there if exists
-s3_path = get_s3_path(args.study)
+s3_path = project_fxns.get_s3_path(args.study)
 s3_exists = s3_bucket_exists(s3_path, args.study)
 if s3_exists:  # sync from s3 and exit script
     s3_sync_to_local(s3_path, args.study, output_dir)
