@@ -34,6 +34,11 @@ parser <- add_option(parser, c('--polarity'), type='character',
                               default=NULL,
                      help=paste('polarity mode of MS used - Required.
                                  Options are "positive" or "negative"'))
+parser <- add_option(parser, c('--study', '-s'), type='character',
+		     default=NULL,
+		     help=paste('Unique study name from database you are 
+				downloading from. Required')
+		     )
 args = parse_args(parser)
 
 generate_blank_summary_file <- function(path) {
@@ -43,7 +48,6 @@ generate_blank_summary_file <- function(path) {
 # (i.e. bw\t0 2)
 output = "### General Parameters
 data_dir
-output_dir
 polarity_mode
 ### Peak Detection Parameters
 detection_method\tcentWave
@@ -124,8 +128,7 @@ write_params = function(data_dir, output_dir, xcms_params, polarity_mode,
     gen_params = sprintf(
 "### General Parameters
 data_dir\t%s
-output_dir\t%s
-polarity_mode\t%s", data_dir, output_dir, polarity_mode
+polarity_mode\t%s", data_dir, polarity_mode
     )
     
     peak_pick_params = sprintf(
@@ -171,7 +174,9 @@ extra\t%s
                          peak_group_params, retcor_params,
                          sep='\n')
     print(param_string)
-    params_file = paste(output_dir, '/xcms_params.tab', sep='')
+    filename = sprintf('/xcms_params_%s.tsv', args$study)
+    print(filename)
+    params_file = paste(output_dir, filename, sep='')
     write(param_string, file=params_file)
 }
 
@@ -198,7 +203,13 @@ param_defined = function(xcms_params, param_name, default_param) {
     }
 }
 
-# TODO - Require a polarity mode
+
+# If any of these things are null, raise a friendly error message
+if (is.null(args$data) | is.null(args$output) | is.null(args$polarity)){
+    stop("When calling the function, you need to specify a data directory (--data),
+    output directory (--output), and polarity mode (--polarity) to proceed. 
+	  type --help to learn more about the parameters") 
+}
 
 
 # If a preset is given, write a filled-in summary file out
