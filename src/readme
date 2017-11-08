@@ -5,5 +5,5 @@ To update after you've make changes (you have to do this)
 "pip install --upgrade ."
 
 Known problem:
-- Want to be able to do: "import revohealthcare.util as util"
-   - Currently must do: "import util"
+- Want to be able to do: "import revohealthcare.project_fxns as project_fxns"
+   - Currently must do: "import project_fxns"

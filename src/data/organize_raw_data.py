@@ -3,6 +3,9 @@ import shutil
 import glob
 import pandas as pd
 import argparse
+import subprocess
+# My code
+import project_fxns.project_fxns as project_fxns
 
 # Each project can have a summary-file instructing how to move raw data into 
 # subfolders for easier xcms processing or organization.
@@ -20,6 +23,8 @@ import argparse
 # Can imagine finding all the organize_data.tab files and running them
 # fairly easily (use find, then iterate through each file with this script.
 
+# To run this, python scriptname.py -sf summaryfile.tab
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-sf', '--summary-file', 
 		    help='Required. Path to a tab-delim summary file that has'
@@ -35,18 +40,18 @@ print summary_file_path
 df = pd.read_csv(summary_file_path, header=None, 
 		 sep='\t', comment='#', skip_blank_lines=True)
 
-print df
-
 # Local paths will vary before the revo_healthcare foldername. Deal with it.
 # iterate through each row, making the necessary folder and then
 # running the commands
+
+path_local = project_fxns.get_local_path()
+
 for row_num, vals in df.iterrows():
-    # first row is path to raw data. Change to that directory
+    # first row is path to raw data. 
+    # move into that directory
     if row_num == 0:  
         path_data_invariant = vals[1]
         print path_data_invariant
-        repo_name = 'revo_healthcare/'
-        path_local = os.getcwd().split(repo_name)[0]
         path = path_local + path_data_invariant
         print path
         os.chdir(path)
@@ -64,13 +69,20 @@ for row_num, vals in df.iterrows():
             if e.errno == 17:
                 print '\nDirectory {dir} already exists.'\
                       ' Continuting...\n'.format(dir=dir_name)
-        # Run the mv commands
+            else:
+                print "OS error: {err}".format(err=e)
+        # Run the mv commands from each row
         for val in vals[1:]:
             # if NaN, skip it
             if pd.isnull(val):
                 continue
             files = glob.glob(val)
-            print files
             for fname in files:
                 shutil.move(fname, dir_name)
-        
+
+# Output .organize_stamp dotfile so the makefile understands
+# that you've run this script
+make_organize_stamp = "touch .organize_stamp"
+subprocess.call(make_organize_stamp, shell=True)
+
+# TODO - sync new folders with S3 
