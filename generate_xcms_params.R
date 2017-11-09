@@ -59,7 +59,7 @@ retcor_method\tloess
 missing
 extra"
     print(output)
-    params_file = paste(path, sprintf('/xcms_params_%s.tab', study),
+    params_file = paste(path, sprintf('/xcms_params_%s.tsv', study),
 		       	sep='')
     write(output, file=params_file)
 }
