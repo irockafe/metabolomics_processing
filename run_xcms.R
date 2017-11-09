@@ -8,13 +8,6 @@ library(optparse)
 # library(CAMERA) TODO!
 
 parser <- OptionParser()
-parser <- add_option(parser, c('--preset'),
-   type='character', default=NULL,
-   help=paste('Preset xcms settings taken from',
-'https://dx.doi.org/10.1038%2Fnprot.2011.454',
-' (Siuzdak 2012).', 'Options are:',
-'hplc_qtof, hplc_qtof_hires, hplc_orbitrap',
-'uplc_qtof, uplc_qtof_hires, uplc_orbitrap'))
 parser <- add_option(parser, c('--summaryfile', '-s'), type='character',
     default=NULL, 
     help=paste('A file containing xcms parameters.',
@@ -22,7 +15,12 @@ parser <- add_option(parser, c('--summaryfile', '-s'), type='character',
    'A mostly-blank summary file will be made',
    'You can then fill in parameters as you like.',
    'See the xcms documentation for defaults or if',
-   'you are confused'))
+   'you are confused. Required.'))
+
+parser <- add_option(parser, c('--data', '-d'), type='character',
+		     default=NULL,
+		     help=paste('Directory containing data for xcms
+				to process. Required.'))
 
 parser <- add_option(parser, c('--output', '-o'), type='character',
 		     default=NULL,
@@ -51,7 +49,6 @@ get_params <- function(path, char_to_numeric) {
                     colClasses="character", blank.lines.skip=TRUE, fill=TRUE)
    print(df)
    print(dim(df))
-   print(df["data_dir",])
    # There should only be one column of values
    if (dim(df)[2] > 1){
        stop(paste("Your summary file should only have 1 (tab-delimited) column of values.",
@@ -84,7 +81,7 @@ get_params <- function(path, char_to_numeric) {
 }
 
 # Code to run xcms
-run_xcms = function(xcms_params, output_dir,
+run_xcms = function(xcms_params, output_dir, data_dir,
            # Optional params below. To set them, include
            # a summary file 
            detection_method='centWave', ppm=25, 
@@ -158,7 +155,7 @@ run_xcms = function(xcms_params, output_dir,
     ### change working directory to your files
     ### TODO - this can probably be changed - xcms certainly has
     ### a way to point to files
-    setwd(xcms_params$data_dir)
+    setwd(data_dir)
     
     #stop("Don't run xcms while you're debugging")
 
@@ -211,36 +208,36 @@ print(args$summaryfile)
 print(is.null(args$summaryfile))
 print(paste('class of summary file:', class(args$summaryfile)))
 
-# if they don't give a sample summary file, generate a sample summary file
-# and raise an error
+# if they don't give a sample summary file, raise an error
 if (is.null(args$summaryfile) ) {
     stop(paste("You didn't pass any parameters.",
  "Please generate a params file using generate_xcms_params.R ",
- "You may need to edit the output of generate_xcms_params.R",
- "after it has run"))
+ "You will need to edit the output of generate_xcms_params.R",
+ "after it has run if you don't choose a preset"))
     }
+if (is.null(args$output) | is.null(args$data)) {
+	stop("You didn't provide an output directory (--output)
+		   or a data directory (--data). Please do so.")
+}
 
 # if summary file, parse it and get the values
 if (is.character(args$summaryfile)){
     xcms_params <- get_params(args$summaryfile, char_to_numeric)  
     print(xcms_params)
 }
-# If user gave both preset and summary file, warn them that
-# preset will take precedence
 
 #TODO Add run_xcms function and how to extract parameters from lists
 # and what to do with values not given
 # check if value is in your user-defined parameters. if so, define it
 # peak detection params
-if (is.null(xcms_params$data_dir)) {
-    stop('You need to specify the directory where your data is (data_dir)
-	in your xcms_params file. That way xcms can find it')
+if (is.null(args$data)) {
+    stop('You need to specify the directory where your data is (--data).
+	That way xcms can find it')
 }
 
 print('Output directory!')
 print(args$output)
-# Done -test for presets
 # Done - test for full summary file
 # Done - fails for missing items - test for partial summary file
-# Done - test for summary file and preset
-system.time(debug(run_xcms(xcms_params, args$output)))
+# Done - test for summary file
+system.time(debug(run_xcms(xcms_params, args$output, args$data)))

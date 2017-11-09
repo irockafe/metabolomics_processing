@@ -3,8 +3,7 @@
 
 # To call with no preset: Rscript scritname.R
       # This will create a blank summary file
-# Rscript scriptname.R --data path/to/data 
-#     --output path/to/output
+# Rscript scriptname.R --output path/to/output
 #     --polarity positive
 #     # THis will make a blank summary file with 
       # some directories filled out
@@ -21,12 +20,7 @@ parser <- add_option(parser, c('--preset'),
 				'hplc_qtof, hplc_qtof_hires, hplc_orbitrap',
 				'uplc_qtof, uplc_qtof_hires, uplc_orbitrap')
 		     )
-parser <- add_option(parser, c('--data', '-d'), type='character',
-		     default=NULL,
-		     help=paste('Path to directory containing data for ',
-                                'xcms to process')
-		     )
-parser <- add_option(parser, c('--output', '-out'), type='character',
+parser <- add_option(parser, c('--output', '-o'), type='character',
 		     default=getwd(),
 		     help=paste('Path to output directory')
 		     )
@@ -41,13 +35,12 @@ parser <- add_option(parser, c('--study', '-s'), type='character',
 		     )
 args = parse_args(parser)
 
-generate_blank_summary_file <- function(path) {
+generate_blank_summary_file <- function(path, study) {
 # Create a summary file that contains xcms parameters that
-# a user can fill in. add tab between name and value (i.e. data_dir\tPATH)
+# a user can fill in. add tab between name and value 
 # If need to create a list, delimit entries with spaces, 
 # (i.e. bw\t0 2)
 output = "### General Parameters
-data_dir
 polarity_mode
 ### Peak Detection Parameters
 detection_method\tcentWave
@@ -66,7 +59,8 @@ retcor_method\tloess
 missing
 extra"
     print(output)
-    params_file = paste(path, '/xcms_params.tab', sep='')
+    params_file = paste(path, sprintf('/xcms_params_%s.tab', study),
+		       	sep='')
     write(output, file=params_file)
 }
 
@@ -109,7 +103,7 @@ default_params = function(string) {
     	  }
 	}
 
-write_params = function(data_dir, output_dir, xcms_params, polarity_mode,
+write_params = function(output_dir, xcms_params, polarity_mode,
            # Optional params below. To set them, include
            # a summary file or use a preset
            # peak detection params
@@ -127,8 +121,7 @@ write_params = function(data_dir, output_dir, xcms_params, polarity_mode,
 
     gen_params = sprintf(
 "### General Parameters
-data_dir\t%s
-polarity_mode\t%s", data_dir, polarity_mode
+polarity_mode\t%s", polarity_mode
     )
     
     peak_pick_params = sprintf(
@@ -205,10 +198,12 @@ param_defined = function(xcms_params, param_name, default_param) {
 
 
 # If any of these things are null, raise a friendly error message
-if (is.null(args$data) | is.null(args$output) | is.null(args$polarity)){
-    stop("When calling the function, you need to specify a data directory (--data),
-    output directory (--output), and polarity mode (--polarity) to proceed. 
-	  type --help to learn more about the parameters") 
+if (is.null(args$output) | is.null(args$polarity) | is.null(args$study)){
+    stop("When calling the function, you need to specify an
+	 output directory (--output), 
+	 and polarity mode (--polarity),
+	 and study name to proceed. 
+	 type --help to learn more about the parameters") 
 }
 
 
@@ -219,11 +214,11 @@ if (is.character(args$preset)) {
     xcms_params <- default_params(args$preset)
     print( xcms_params)
     # Write to file 
-    write_params(args$data, args$output, xcms_params, 
+    write_params(args$output, xcms_params, 
                  args$polarity) 
 } else {
     # pass
-    generate_blank_summary_file(args$output)
+    generate_blank_summary_file(args$output, args$study)
 }
 
 
