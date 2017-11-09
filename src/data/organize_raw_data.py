@@ -1,5 +1,5 @@
 import os
-import shutil 
+import shutil
 import glob
 import pandas as pd
 import argparse
@@ -7,12 +7,12 @@ import subprocess
 # My code
 import project_fxns.project_fxns as project_fxns
 
-# Each project can have a summary-file instructing how to move raw data into 
+# Each project can have a summary-file instructing how to move raw data into
 # subfolders for easier xcms processing or organization.
 # Essentially, want a tab-delimited file with following conventions:
 # The file's name is 'organize_data.tab'
 # First line is:
-#     PATH {tab} repo_name/path/to/data 
+#     PATH {tab} repo_name/path/to/data
 # We need to use a relative path starting with the git repo_name because
 # you're testing stuff on multiple computers, and paths change.
 #
@@ -26,7 +26,7 @@ import project_fxns.project_fxns as project_fxns
 # To run this, python scriptname.py -sf summaryfile.tab
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-sf', '--summary-file', 
+parser.add_argument('-sf', '--summary-file',
 		    help='Required. Path to a tab-delim summary file that has'
 		    ' the path to raw data on the top line. Each successive'
  		    ' row is structured as: "folder_name {tab} command_1'
@@ -37,7 +37,7 @@ args = parser.parse_args()
 summary_file_path = args.summary_file
 print summary_file_path
 # load summary file to pandas.
-df = pd.read_csv(summary_file_path, header=None, 
+df = pd.read_csv(summary_file_path, header=None,
 		 sep='\t', comment='#', skip_blank_lines=True)
 
 # Local paths will vary before the revo_healthcare foldername. Deal with it.
@@ -47,16 +47,16 @@ df = pd.read_csv(summary_file_path, header=None,
 path_local = project_fxns.get_local_path()
 
 for row_num, vals in df.iterrows():
-    # first row is path to raw data. 
+    # first row is path to raw data.
     # move into that directory
-    if row_num == 0:  
+    if row_num == 0:
         path_data_invariant = vals[1]
         print path_data_invariant
         path = path_local + path_data_invariant
         print path
         os.chdir(path)
         # print glob.glob('*.txt')
-    
+
     # Rest of the rows contain directory names and mv commands
     else:
         # The first column of rows 2-? contain a directory name
@@ -85,4 +85,4 @@ for row_num, vals in df.iterrows():
 make_organize_stamp = "touch .organize_stamp"
 subprocess.call(make_organize_stamp, shell=True)
 
-# TODO - sync new folders with S3 
+# TODO - sync new folders with S3
