@@ -1,0 +1,19 @@
+Use subtree to grab xcms code from its own git project.
+https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree
+--------------------------
+First, make the subtree:
+>> git subtree add --prefix src/xcms_wrapper https://github.com/irockafe/xcms_wrapper.git --squash
+
+(--squash omits the history of subproject from main project. Probably what you want)
+
+---------------------------
+Second, pull changes from repository
+>> git subtree pull --prefix src/xcms_wrapper https://github.com/irockafe/xcms_wrapper.git master --squash
+
+---------------------------
+
+
+
+----------------------------
+In case you accidentally updated the subtree repo instead of the native one, stash changes. First commit/stash and push any changes to main project, then reset everything.
+>> git reset --hard
