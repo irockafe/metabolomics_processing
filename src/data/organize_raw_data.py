@@ -26,7 +26,7 @@ import project_fxns.project_fxns as project_fxns
 # To run this, python scriptname.py -sf summaryfile.tab
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-sf', '--summary-file',
+parser.add_argument('-f', '--summary-file',
 		    help='Required. Path to a tab-delim summary file that has'
 		    ' the path to raw data on the top line. Each successive'
  		    ' row is structured as: "folder_name {tab} command_1'
