@@ -4,6 +4,8 @@
 # GLOBALS                                                                       #
 ################################################################################
 local_path := $(CURDIR)
+raw_dir = data/raw/
+processed_dir = data/processed/
 
 
 ###########################
@@ -22,16 +24,20 @@ user_settings.tab: src/get_user_info.py
 #       mv environment.yml environment.yml.bak;\
 #       conda env export > environment.yml
 
+
+##########################################################################
+##                                                                      ##
+##                              MTBLS315                                ##
+##########################################################################
+
 ###########################
 # MTBLS315                # 
 # uplc_pos                #
 ###########################
 
 study = MTBLS315
-raw_dir = data/raw/
-processed_dir = data/processed/
 ms_assay = uplc_pos
-organize_file = $(local_path)/user_input/organize_raw_data/organize_data_$(study)_$(ms_assay).tsv
+organize_file = $(local_path)/user_input/organize_raw_data/organize_data_$(study).tsv
 xcms_params = $(local_path)/user_input/xcms_parameters/xcms_params_$(study)_$(ms_assay).tsv
 
 
@@ -56,7 +62,7 @@ $(raw_dir)/$(study)/$(ms_assay)/.raw_data_cleaned_up: $(processed_dir)/$(study)/
 # python script and os.mkdir()
 $(processed_dir)/$(study)/$(ms_assay)/xcms_output.tsv: src/xcms_wrapper/run_xcms.R $(xcms_params) $(raw_dir)/$(study)/.organize_stamp 	
 	mkdir -p $(processed_dir)/$(study)/$(ms_assay)/
-	Rscript $< -s "$(xcms_params)" --data "$(raw_dir)/$(study)/$(ms_assay)/" --output "$(processed_dir)/$(study)/$(ms_assay)/" 
+	Rscript $< -s "$(xcms_params)" --data "$(raw_dir)/$(study)/$(ms_assay)/" --output "$(local_path)/$(processed_dir)/$(study)/$(ms_assay)/" 
 	
 
 # Organizing raw data depends on the organize_file commands, a script,
@@ -70,10 +76,3 @@ $(raw_dir)/$(study)/.organize_stamp: src/data/organize_raw_data.py $(organize_fi
 $(raw_dir)/$(study)/.download_stamp: src/data/download_study.py
 	python $< --study $(study)
 	touch $@
-
-
-
-
-
-
-
