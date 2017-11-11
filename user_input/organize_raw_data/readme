@@ -1,1 +1,14 @@
-Location for files that contain mv commands to organize raw data files into their respective projects (i.e. uplc_c18_pos, uplc_c18_neg, uplc_hilic_pos, uplc_hilic_neg)
+Files that are used with /src/data/organize_raw_data.py
+to move raw data files into useful folders that xcms will
+use to process data from a particular experiment/run.
+
+Example:
+python /src/data/organize_raw_data.py -sf organize_data_mtbls315.tab
+
+Mostly separating projects by positive/negative mode and sending to their own folders
+
+-----------------------------------------------------
+FILE FORMAT
+first line: gives path to raw data
+second line: new directory for files, followed by mv commands needed to move files you want. Each command is tab-delimited 
+

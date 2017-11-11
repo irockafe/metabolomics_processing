@@ -1,0 +1,3 @@
+PATH	data/raw/MTBLS315/
+uplc_pos	*_P.mzML
+uplc_neg	*_N.mzML
