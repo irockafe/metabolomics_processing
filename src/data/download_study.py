@@ -51,6 +51,7 @@ def get_user_settings():
     return user_settings
 """
 
+
 def s3_bucket_exists(s3_path, study):
     # Test if bucket exists on S3 based on s3_path string and
     # study string and sync if it does
@@ -71,6 +72,7 @@ def get_s3_path(study):
     s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
     return s3_path
 """
+
 
 def s3_sync_to_aws(s3_path, study, output_dir):
     sync = ("nohup aws s3 sync '{dir}' '{s3}raw/{study}' ".format(
@@ -161,11 +163,8 @@ def make_dir(study):
                                                   study=study)
     try:
         os.mkdir(directory)
-        make_dirstamp = "touch '{dir}/.dirstamp'".format(
-            dir=directory)
-        subprocess.call(make_dirstamp, shell=True)
     except OSError:
-        print('\n' + '-' * 20 + '\n' + 'directory already exists ' +
+        print('\n' + '-' * 20 + '\n' + 'raw_data directory already exists ' +
               'I think that means you downloaded ' +
               'these files previously. Going to try to download from S3\n' +
               '-'*20)
@@ -200,13 +199,20 @@ s3_path = project_fxns.get_s3_path(args.study)
 s3_exists = s3_bucket_exists(s3_path, args.study)
 if s3_exists:  # sync from s3 and exit script
     s3_sync_to_local(s3_path, args.study, output_dir)
-    exit()
+    # exit()
 
 # If didn't find s3 bucket, get ftp link and download from database
-ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
-download_ftp(ftp_path, output_dir)
+else:
+    ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
+    download_ftp(ftp_path, output_dir)
+
+# If script is successful, make a file-stamp telling me
+# that download was successful
+make_dirstamp = "touch '{dir}/.download_stamp'".format(
+            dir=output_dir)
+subprocess.call(make_dirstamp, shell=True)
+
 # sync to aws
 if s3_path:  # Assumes that will return None if no S3 specified
     s3_sync_to_aws(s3_path, args.study, output_dir)
-
 #

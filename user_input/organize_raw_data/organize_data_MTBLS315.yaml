@@ -1,0 +1,20 @@
+MTBLS315:
+    assays:
+        uhplc_pos:
+            files:
+                - "*_P.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "orbitrap"
+            data_path:
+                "data/raw/MTBLS315/uhplc_pos/"
+        uhplc_neg:
+            files:
+                - "*_N_mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "orbitrap"
+            data_path:
+                "data/raw/MTBLS315/uhplc_neg/"
