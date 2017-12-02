@@ -10,6 +10,8 @@
 # For presets, do:
 # Rscript scriptname.R --preset 'hplc_orbitrap'
 library(optparse)
+library(IPO)
+library(snowfall)
 
 parser <- OptionParser()
 parser <- add_option(parser, c('--preset'),
