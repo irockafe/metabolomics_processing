@@ -87,13 +87,13 @@ get_initial_params <- function(mass_spec, chromatography) {
   min_peakwid = instrument_params[[mass_spec]][['peakwidth']][1]
   max_peakwid = instrument_params[[mass_spec]][['peakwidth']][2]
   my_ppm = instrument_params[[mass_spec]][['ppm']]
-  prefilter_number = instrument_params[[mass_spec]][['prefilter']][1]
+  prefilter_number = 0  # because we're dealing with small subset of actual number of files
   prefilter_intensity = instrument_params[[mass_spec]][['prefilter']][2]
 
   # Edit the parameters for IPO to optimize  
   peak_picking_params$min_peakwidth = c(min_peakwid - (min_peakwid / 2), min_peakwid + (min_peakwid / 2))
   peak_picking_params$max_peakwidth = c(max_peakwid - (max_peakwid / 2), max_peakwid + (max_peakwid / 2))
-  peak_picking_params$ppm = c(my_ppm - (my_ppm/2), my_ppm + (my_ppm/2))
+  peak_picking_params$ppm = my_ppm + 1.5 # TODO just for testing, b/c I know that 4ppm is a decent choice
   # peak filter intensity value
   peak_picking_params$value_of_prefilter = c( prefilter_intensity - (prefilter_intensity / 3),
                                               prefilter_intensity + (prefilter_intensity / 3))
@@ -142,14 +142,13 @@ ouput_path = args$output
 local_path = args$local
 
 ### Debugging stuff
-output_path = '~/Dropbox (MIT)/Alm_Lab/projects/revo_healthcare/user_input/xcms_parameters'
+# TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
+local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
+output_path = paste(local_path, '/user_input/xcms_parameters', sep='')
 #print(yaml_path)
-yaml_path = '~/Dropbox (MIT)/Alm_Lab/projects/revo_healthcare/user_input/organize_raw_data/organize_data_MTBLS315.yaml'
+yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
 
-# TODO get local_path programatically - look for .home file or something like that
-local_path = '~/Dropbox (MIT)/Alm_Lab/projects/revo_healthcare/'
 ###
-
 # a named list containing the path to data and the xcms parameters to use
 parameters_all_assays = parse_yaml(yaml_path)
 
@@ -176,7 +175,7 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   
   # Run IPO on peak_picking
   set.seed(1)
-  num_files = 2 # use 2 when debugging
+  num_files = 5 # use 2 when debugging, 5 when actually running
   random_files = paste(data_path, sample(file_list, num_files), sep='')
   print(random_files)
   print('Starting to optimize peak_picking_params')
