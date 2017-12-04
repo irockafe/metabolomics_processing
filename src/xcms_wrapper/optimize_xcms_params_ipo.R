@@ -140,7 +140,7 @@ prefilter\t%s %s",
 
 yaml_path = args$yaml
 ouput_path = args$output
-local_path = system('git rev-parse --show-toplevel')
+local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 
 ### Debugging stuff
 # TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
