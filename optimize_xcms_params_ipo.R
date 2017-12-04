@@ -87,7 +87,7 @@ get_initial_params <- function(mass_spec, chromatography) {
   min_peakwid = instrument_params[[mass_spec]][['peakwidth']][1]
   max_peakwid = instrument_params[[mass_spec]][['peakwidth']][2]
   my_ppm = instrument_params[[mass_spec]][['ppm']]
-  prefilter_number = instrument_params[[mass_spec]][['prefilter']][1]
+  prefilter_number = instrument_params[[mass_spec]][['prefilter']][1]  # Because we're using a small subset of samples
   prefilter_intensity = instrument_params[[mass_spec]][['prefilter']][2]
 
   # Edit the parameters for IPO to optimize  
@@ -176,20 +176,29 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   
   # Run IPO on peak_picking
   set.seed(1)
-  num_files = 2 # use 2 when debugging
+  num_files = 1 # use 2 when debugging
   random_files = paste(data_path, sample(file_list, num_files), sep='')
   print(random_files)
   print('Starting to optimize peak_picking_params')
-  optimized_params_peak_picking = system.time(IPO::optimizeXcmsSet(files = random_files,
+  t1 = timestamp()
+  optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
                                                        params = parameters_all_assays[[assay_name]]$peak_pick_params,
                                                        plot=TRUE,
-                                                       nSlaves=0))
+                                                       nSlaves=0)
+  t2 = timestamp()
+  message(paste('Started to optimize xcmsSet params at ', t1))
+  message(paste('Finished optimizing xcmsSet params at ', t2))
   saveRDS(optimized_params_peak_picking, 'optimized_peak_params.Rdata')
+  
   # Run IPO on retcor from the same random set of files
-  optimized_params_retention_correction = system.time(IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
+  t1 = timestamp()
+  optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
                                                                 params = parameters_all_assays[[assay_name]]$retcor_params,
                                                                 plot=TRUE,
-                                                                nSlaves=0))
+                                                                nSlaves=0)
+  t2 = timestamp()
+  message(paste('Started to optimize grouping params at ', t1))
+  message(paste('Finished optimizing grouping params at ', t2))
   saveRDS(optimized_params_retention_correction, 'optimized_retcor_params.Rdata')
   
 }
