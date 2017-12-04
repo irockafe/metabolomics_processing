@@ -12,6 +12,7 @@ parser <- add_option(parser, c('--output', '-o'), type='character',
 parser <- add_option(parser, c('--yaml', '-y'), type='character',
 		     help=paste('Path to yaml file with name of study
 				chromatography used, and instrument type'))
+# TODO delete this flag. use rev-parse instead to define local project dir
 parser <- add_option(parser, c('--local'), type='character',
                      help=paste('Required. Local path to the project '))
 parser <- add_option(parser, c('--cores'), type='integer',
@@ -139,11 +140,11 @@ prefilter\t%s %s",
 
 yaml_path = args$yaml
 ouput_path = args$output
-local_path = args$local
+local_path = system('git rev-parse --show-toplevel')
 
 ### Debugging stuff
 # TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
-local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
+#local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
 output_path = paste(local_path, '/user_input/xcms_parameters', sep='')
 #print(yaml_path)
 yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
