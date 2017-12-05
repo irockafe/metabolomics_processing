@@ -105,6 +105,10 @@ get_initial_params <- function(mass_spec, chromatography) {
   # IPO retention time correction params
   retcor_params = IPO::getDefaultRetGroupStartingParams()
   retcor_params$bw = chromatograph_params[[chromatography]][['bw']]
+  # Don't deal with these params, just use defaults
+  retcor_params$gapInit = NULL
+  retcor_params$gapExtend = NULL
+  retcor_params$profStep = 1
   
   # Just require 1 sample to define a group, especially for optimization, since you're only using 5-ish samples
   retcor_params$minfrac = 0
