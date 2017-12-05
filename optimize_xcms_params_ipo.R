@@ -12,6 +12,7 @@ parser <- add_option(parser, c('--output', '-o'), type='character',
 parser <- add_option(parser, c('--yaml', '-y'), type='character',
 		     help=paste('Path to yaml file with name of study
 				chromatography used, and instrument type'))
+# TODO delete this flag. use rev-parse instead to define local project dir
 parser <- add_option(parser, c('--local'), type='character',
                      help=paste('Required. Local path to the project '))
 parser <- add_option(parser, c('--cores'), type='integer',
@@ -139,11 +140,11 @@ prefilter\t%s %s",
 
 yaml_path = args$yaml
 ouput_path = args$output
-local_path = args$local
+local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 
 ### Debugging stuff
 # TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
-local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
+#local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
 output_path = paste(local_path, '/user_input/xcms_parameters', sep='')
 #print(yaml_path)
 yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
@@ -175,20 +176,29 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   
   # Run IPO on peak_picking
   set.seed(1)
-  num_files = 5 # use 2 when debugging, 5 when actually running
+  num_files = 1 # use 2 when debugging
   random_files = paste(data_path, sample(file_list, num_files), sep='')
   print(random_files)
   print('Starting to optimize peak_picking_params')
-  optimized_params_peak_picking = system.time(IPO::optimizeXcmsSet(files = random_files,
+  t1 = timestamp()
+  optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
                                                        params = parameters_all_assays[[assay_name]]$peak_pick_params,
                                                        plot=TRUE,
-                                                       nSlaves=0))
+                                                       nSlaves=0)
+  t2 = timestamp()
+  message(paste('Started to optimize xcmsSet params at ', t1))
+  message(paste('Finished optimizing xcmsSet params at ', t2))
   saveRDS(optimized_params_peak_picking, 'optimized_peak_params.Rdata')
+  
   # Run IPO on retcor from the same random set of files
-  optimized_params_retention_correction = system.time(IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
+  t1 = timestamp()
+  optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
                                                                 params = parameters_all_assays[[assay_name]]$retcor_params,
                                                                 plot=TRUE,
-                                                                nSlaves=0))
+                                                                nSlaves=0)
+  t2 = timestamp()
+  message(paste('Started to optimize grouping params at ', t1))
+  message(paste('Finished optimizing grouping params at ', t2))
   saveRDS(optimized_params_retention_correction, 'optimized_retcor_params.Rdata')
   
 }
