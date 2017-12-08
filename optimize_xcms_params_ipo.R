@@ -171,7 +171,7 @@ retcor_method\t%s
       next
     }
     # write to new line, tab-delimited
-    other_params = paste(other_params, sprintf('\n%s\t%s', name, ipo_params[name]))
+    other_params = paste(other_params, sprintf('\n%s\t%s', name, ipo_params[name]), sep='')
   }
   print(names(ipo_params))
   print(other_params)
@@ -185,12 +185,12 @@ retcor_method\t%s
 }
 
 ### debug shit
-#peak_params = readRDS('optimized_peak_params.Rdata')
-#retcor_params = readRDS('optimized_retcor_params.Rdata')
-#params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
-#write_final_params(params)
+peak_params = readRDS('optimized_peak_params.Rdata')
+retcor_params = readRDS('optimized_retcor_params.Rdata')
+params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
+write_final_params(params)
 
-#print(qupewotuqpoewutqpo)
+print(qupewotuqpoewutqpo)
 ### debug shit
 
 yaml_path = args$yaml
