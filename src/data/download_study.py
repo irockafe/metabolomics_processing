@@ -75,8 +75,8 @@ def get_s3_path(study):
 
 
 def s3_sync_to_aws(s3_path, study, output_dir):
-    sync = ("nohup aws s3 sync '{dir}' '{s3}raw/{study}' ".format(
-            s3=s3_path, study=study, dir=output_dir)
+    sync = ("nohup aws s3 sync '{path}' '{s3}raw/{study}' ".format(
+            s3=s3_path, study=study, path=output_dir)
             )
     print ('\n\nUploading data to S3 here \n{s3}'.format(s3=sync))
     subprocess.call(sync, shell=True)
