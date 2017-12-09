@@ -80,22 +80,33 @@ def task_process_data():
 
         # Run xcms to process the raw data
         assays = STUDY_DICT[study]
-        xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/' +
-                           'xcms_params*.tsv')
-        all_xcms_params = glob.glob(xcms_param_path)
+        xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
+        print xcms_param_path
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
         print('XCMS params files\n', all_xcms_params)
         for assay in assays:
             # If xcms parameters exist, just run xcms with those parameters
-            continue
-            if 'xcms_params_{study}_{assay}.tsv' in all_xcms_params:
+            xcms_param_file = (xcms_param_path +
+                               'xcms_params_{study}_{assay}.tsv'.format(
+                                  study=study, assay=assay))
+            processed_output = PROCESSED_DIR + '{study}/{assay}/'.format(
+                study=study, assay=assay)
+
+            # If xcms parameters already exist
+            if xcms_param_file in all_xcms_params:
                 yield {
-                    'targets': (PROCESSED_DIR +
+                    'targets': [(PROCESSED_DIR +
                                 '{study}/{assay}/xcms_result.tsv'.format(
                                     study=study, assay=assay)
-                                ),
+                                 )],
                     'file_dep': ['src/xcms_wrapper/run_xcms.R',
                                  (RAW_DIR + '/{study}/.organize_stamp')],
-                    'actions': 'asdf',  # run_xcms.R,
+                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
+                                 '--summaryfile "%s" ' % xcms_param_file +
+                                 '--output "{path}" '.format(
+                                    path=processed_output) +
+                                 '--cores 4'
+                                 )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
                 }
