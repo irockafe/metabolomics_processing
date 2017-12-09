@@ -54,6 +54,9 @@ for assay in yaml[study]['assays'].keys():
 # keep the timestamp they have here, or the timestamp from
 # when they were downloaded. If timestamp of when downloaded,
 # they're likely to be 'up to date' even if I change the scrip
-make_organize_stamp = 'touch .organize_stamp'
-subprocess.call(make_organize_stamp, shell=True)
+
+# still in the raw_data directory
+# open('.organize_stamp', 'a').close()
+# make_organize_stamp = 'touch .organize_stamp'
+# subprocess.call(make_organize_stamp, shell=True)
 #

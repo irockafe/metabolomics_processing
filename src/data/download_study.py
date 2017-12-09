@@ -3,10 +3,10 @@ import os
 import argparse
 import pipes
 import urllib2
-import pandas as pd
 # My code
 import project_fxns.project_fxns as project_fxns
 
+# TODO: add an ftp flag so that users can specify non-MTBLS/MWB projects
 # Use this script to download files from Metabolights IDs or
 # Metabolomics workbench Study IDs.
 # Usage - python scriptname.py --study MTBLSxxxx
@@ -181,14 +181,14 @@ def download_ftp(ftp_path, output_dir):
     # Always three entries when split [ftp:, '', 'hostname']
     # that we handle with -nH, ftp://hostname.org/path/to/things/*
     # Note that we also have a /*, so we exclude the last / when counting
-    # directorystructures to ignore
+    # directory structures to ignore
     url_dirs_to_cut = len(ftp_path.split('/')[3:-1])
     print url_dirs_to_cut
     wget_command = (
-        'nohup wget -r -nH --cut-dirs={cut} ' +
+        'nohup wget -r -nH --cut-dirs={cut} '.format(cut=url_dirs_to_cut) +
         '{ftp} -P {dir} --no-verbose &'.format(ftp=ftp_path,
                                                dir=pipes.quote(output_dir),
-                                               cut=url_dirs_to_cut)
+                                               )
                     )
     subprocess.call(wget_command, shell=True)
 
