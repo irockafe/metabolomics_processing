@@ -181,14 +181,15 @@ retcor_method\t%s
                        sep='\n')
   print(peak_pick_params)
   print(param_string)
-  write(param_string, file='poop.tsv')
+  write(param_string, file=output_file_path)
 }
 
 ### debug shit
 peak_params = readRDS('optimized_peak_params.Rdata')
 retcor_params = readRDS('optimized_retcor_params.Rdata')
 params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
-write_final_params(params)
+output = '.'
+write_final_params(params, output)
 
 print(qupewotuqpoewutqpo)
 ### debug shit
@@ -216,6 +217,7 @@ parameters_all_assays = parse_yaml(yaml_path)
 study = parameters_all_assays$Study
 print(study)
 for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study name
+  processed_data_path = paste(local_path, sprintf('data/processed/%s/%s/', study, assay_name)) 
   print(assay_name)
 
   print(parameters_all_assays[[assay_name]])  # Write the initial parameters as Rdata format, since you don't really need them that much
@@ -225,7 +227,6 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   # TODO make this os-nonspecific (don't use forward/backslashes)
   data_path = paste(local_path, parameters_all_assays[[assay_name]]$data_path, sep='/')
   file_list = list.files(data_path)
-  
   # Run IPO on peak_picking
   set.seed(1)
   num_files = 1 # use 2 when debugging
@@ -240,7 +241,8 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   t2 = timestamp()
   message(paste('Started to optimize xcmsSet params at ', t1))
   message(paste('Finished optimizing xcmsSet params at ', t2))
-  saveRDS(optimized_params_peak_picking, 'optimized_peak_params.Rdata')
+  saveRDS(optimized_params_peak_picking, paste(processed_data_path, 
+	     'optimized_peak_params.Rdata', sep='/'))
   
   # Run IPO on retcor from the same random set of files
   t1 = timestamp()
@@ -251,7 +253,8 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   t2 = timestamp()
   message(paste('Started to optimize grouping params at ', t1))
   message(paste('Finished optimizing grouping params at ', t2))
-  saveRDS(optimized_params_retention_correction, 'optimized_retcor_params.Rdata')
+  saveRDS(optimized_params_retention_correction, paste(processed_data_path,
+				'optimized_retcor_params.Rdata', sep='/'))
   
   # Finally, write the best parameters out to a file
   # Unfortunately, the format of everything but best-settings
@@ -259,7 +262,7 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   # so users need to look in the Rdata files if they want to recall 
   # what the initial parameter settings were for IPO
   # write to file
-  output_path = paste(local_path, sprintf('/user_input/xcms_parameters_%s_%s.tsv',
+  optimized_param_output = paste(local_path, sprintf('/user_input/xcms_parameters_%s_%s.tsv',
                                           study, assay_name),
                       sep='/')
   params = c(optimized_params_peak_picking, optimized_params_retention_correction)
