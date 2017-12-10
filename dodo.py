@@ -89,7 +89,9 @@ def task_process_data():
             xcms_param_file = (xcms_param_path +
                                'xcms_params_{study}_{assay}.tsv'.format(
                                   study=study, assay=assay))
-            processed_output = PROCESSED_DIR + '{study}/{assay}/'.format(
+            raw_data_path = RAW_DIR + '/%s/%s/' % (study, assay)
+            print 'raw data path', raw_data_path
+            processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
                 study=study, assay=assay)
 
             # If xcms parameters already exist
@@ -103,8 +105,9 @@ def task_process_data():
                                  (RAW_DIR + '/{study}/.organize_stamp')],
                     'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
                                  '--summaryfile "%s" ' % xcms_param_file +
+                                 '--data "%s" ' % raw_data_path +
                                  '--output "{path}" '.format(
-                                    path=processed_output) +
+                                    path=processed_output_path) +
                                  '--cores 4'
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
