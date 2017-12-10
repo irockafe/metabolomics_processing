@@ -227,6 +227,22 @@ if (is.character(args$summaryfile)){
     print(xcms_params)
 }
 
+
+function set_absolute_path(local_path, given_path) {
+  # Decide whether or not user gave you have an absolute path
+  # if the known local path (non-git path) if present
+  # then assume it's absolute
+  
+  # If local path is in the path given on command line, return 
+  # command line path. Otherwise, add the local path to it
+  if (grepl(local_path, given_path)){
+    return given_path
+  } else {
+    return paste(local_path, given_path, sep='/')
+  }
+
+}
+
 #TODO Add run_xcms function and how to extract parameters from lists
 # and what to do with values not given
 # check if value is in your user-defined parameters. if so, define it
@@ -240,8 +256,8 @@ if (is.null(args$data)) {
 print('Output directory!')
 print(args$output)
 local_path = system('git rev-parse --show-toplevel', intern=TRUE)
-output_path = paste(local_path, args$output, sep='/')
-data_path = paste(local_path, args$data, sep='/')
+output_path = set_absolute_path(local_path, args$output)  
+data_path = set_absolute_path(local_path, args$data)
 # Done - test for full summary file
 # Done - fails for missing items - test for partial summary file
 # Done - test for summary file
