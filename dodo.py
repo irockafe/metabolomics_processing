@@ -56,7 +56,7 @@ def task_process_data():
 
         # Organize the raw data
         org_script = 'src/data/organize_raw_data.py'
-        organize_file = ('{local_dir}/user_input/study_info/'.format(
+        yaml_file = ('{local_dir}/user_input/study_info/'.format(
                             local_dir=LOCAL_PATH) +
                          '{study}.yaml'.format(
                              study=study)
@@ -66,13 +66,13 @@ def task_process_data():
         yield {
             'targets': [organize_stamp],
             'file_dep': [org_script,
-                         organize_file,
+                         yaml_file,
                          # Need to have downloaded raw data
                          ('{raw_dir}/{study}/.download_stamp'.format(
                              raw_dir=RAW_DIR, study=study))
                          ],
             'actions': ['python {py} -f "{org_file}"'.format(
-                            py=org_script, org_file=organize_file),
+                            py=org_script, org_file=yaml_file),
                         'touch "{stamp}"'.format(stamp=organize_stamp)
                         ],
             'name': 'organize_{study}'.format(study=study)
@@ -103,30 +103,63 @@ def task_process_data():
                                  )],
                     'file_dep': ['src/xcms_wrapper/run_xcms.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
-                                   study=study))],
+                                    study=study)),
+                                 xcms_param_file
+                                  ],
                     'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
                                  '--summaryfile "%s" ' % xcms_param_file +
                                  '--data "%s" ' % raw_data_path +
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
-                                 '--cores 4'
+                                 # TODO how to change cores depending on user?
+                                 '--cores 8' 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
                 }
 
-            # Else, run IPO, then run xcms with those parameters
-            # and write a warning message
+            else:
+                # Else, run IPO to generate/optimize params
+                yield {
+                    'targets': [xcms_param_file],
+                    'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
+                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
+                                   study=study))],
+                    'actions': [('Rscript src/xcms_wrapper/' +
+                                 'optimize_xcms_params_ipo.R' + 
+                                 '--yaml {yaml}'.format(yaml=yaml_file) +
+                                 '--output {path}'.format(path=
+                                     'user_input/xcms_parameters/') +
+                                 '--cores 8'
+                                  )],
 
-            # xcms task, using xcms() fxn
-            '''
-            yield {
-                'targets':
-                'file_dep':
-                'actions':
-                'name':
-            }
-            '''
-            pass
+                    'name': 'optimize_params_ipo_{study}_{assay}'.format(
+                        study=study, assay=assay)
+                        }
+                # then run xcms with the new parameters
+                yield {
+                    'targets': [(PROCESSED_DIR +
+                                '{study}/{assay}/xcms_result.tsv'.format(
+                                    study=study, assay=assay)
+                                 )],
+                    'file_dep': ['src/xcms_wrapper/run_xcms.R',
+                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
+                                    study=study)),
+                                 ('/user_input/xcms_parameters/' +
+                                    'xcms_params_' +
+                                    '{study}_{assay}.tsv'.format(
+                                        study=study, assay=assay))
+                                  ],
+                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
+                                 '--summaryfile "%s" ' % xcms_param_file +
+                                 '--data "%s" ' % raw_data_path +
+                                 '--output "{path}" '.format(
+                                    path=processed_output_path) +
+                                 # TODO how to change cores depending on user?
+                                 '--cores 8' 
+                                 )],
+                    'name': 'run_xcms_{study}_{assay}'.format(study=study,
+                                                              assay=assay)
+                }
             # clean-up raw data generator task to remove raw data from local
 #
