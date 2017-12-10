@@ -228,7 +228,7 @@ if (is.character(args$summaryfile)){
 }
 
 
-function set_absolute_path(local_path, given_path) {
+set_absolute_path <- function(local_path, given_path) {
   # Decide whether or not user gave you have an absolute path
   # if the known local path (non-git path) if present
   # then assume it's absolute
