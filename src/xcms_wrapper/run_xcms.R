@@ -129,8 +129,6 @@ run_xcms = function(xcms_params, output_dir, data_dir)
   
   # Load packages
   # library(xcms)
-  library(snowfall)
-  library(BiocParallel)
   # TODO - Learn to set the number of cores
   #register(MulticoreParam(4))
   
