@@ -3,7 +3,7 @@ import shutil
 import glob
 import yaml
 import argparse
-import subprocess
+# import subprocess
 # my code
 import project_fxns.project_fxns as project_fxns
 
@@ -47,13 +47,23 @@ for assay in yaml[study]['assays'].keys():
         files = glob.glob(cmd)
         print ('\nFiles found', files)
         for fname in files:
-            shutil.move(fname, organized_dir)
+            if not os.path.exists(organized_dir + '/' + fname):
+                print 'No path exists. Moving file'
+                shutil.move(fname, organized_dir)
+            else:
+                print('File name', fname)
+                print 'found existing file. deleting and moving again'
+                os.remove(organized_dir + '/' + fname)
+                shutil.move(fname, organized_dir)
 
 # Output a .organize_stamp to show that you completed this script
 # TODO will these org stamps, when sync'd to S3
 # keep the timestamp they have here, or the timestamp from
 # when they were downloaded. If timestamp of when downloaded,
 # they're likely to be 'up to date' even if I change the scrip
-make_organize_stamp = 'touch .organize_stamp'
-subprocess.call(make_organize_stamp, shell=True)
+
+# still in the raw_data directory
+# open('.organize_stamp', 'a').close()
+# make_organize_stamp = 'touch .organize_stamp'
+# subprocess.call(make_organize_stamp, shell=True)
 #

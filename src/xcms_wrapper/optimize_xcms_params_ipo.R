@@ -121,26 +121,78 @@ get_initial_params <- function(mass_spec, chromatography) {
 }
 
 
-write_final_params <- function(peak_picking_params,
-                         retcor_params, 
+write_final_params <- function(ipo_params, 
                          output_file_path) {
 	# write out the optimized parameters
   # INPUT - output_file_path - whole-path, including filename
-  #   params - named list containing parameters
-  general_peak_pick_params = sprintf(
+  #   ipo_params - named list containing parameters from IPO
+  
+  # First write out the most important parameters
+  peak_pick_params = sprintf(
 "### Peak Detection Parameters
 peak_picking\t%s
 ppm\t%s
 peak_width\t%s %s
-prefilter\t%s %s",
-    "CentWave", peak_picking_params$ppm,
-    peak_picking_params$min_peak_width, peak_picking_params$max_peakwidth,
-    peak_picking_params$prefilter, peak_picking_params$value_of_prefilter
-)
-  print('Printing shit that will become a file')
-  print(general_peak_pick_params)
-  print(peak_picking_params$ppm)
+prefilter\t%s %s
+",
+    "CentWave", params$ppm,
+    ipo_params$min_peakwidth, ipo_params$max_peakwidth,
+    ipo_params$prefilter, ipo_params$value_of_prefilter
+  )
+  peak_group_params = sprintf(
+    "### Peak-grouping parameters
+bw\t%s
+mzwid\t%s
+minfrac\t%s
+minsamp\t%s
+",  ipo_params$bw,
+    ipo_params$mzwid, 
+    ipo_params$minfrac, 
+    ipo_params$minsamp
+  )
+  
+  retcor_params = sprintf(
+    "### retention-correction parameters
+retcor_method\t%s
+",
+    ipo_params[['retcorMethod']]
+  )
+  
+  # Then define the ones that we care less about
+  already_used_params = c('ppm', 'min_peakwidth', 'max_peakwidth',
+                          'prefilter', 'value_of_prefilter',
+                          'bw', 'mzwid', 'minfrac', 'minsamp',
+                          'retcor_method')
+  
+  other_params = '### Other parameters'
+  for (name in names(ipo_params)){
+    # skip to next entry if already wrote it earlier
+    if (name %in% already_used_params) {
+      next
+    }
+    # write to new line, tab-delimited
+    other_params = paste(other_params, sprintf('\n%s\t%s', name, ipo_params[name]), sep='')
+  }
+  print(names(ipo_params))
+  print(other_params)
+  param_string = paste(peak_pick_params,
+                       peak_group_params, retcor_params,
+                       other_params,
+                       sep='\n')
+  print(peak_pick_params)
+  print(param_string)
+  write(param_string, file=output_file_path)
 }
+
+### debug shit
+peak_params = readRDS('optimized_peak_params.Rdata')
+retcor_params = readRDS('optimized_retcor_params.Rdata')
+params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
+output = '.'
+write_final_params(params, output)
+
+print(qupewotuqpoewutqpo)
+### debug shit
 
 yaml_path = args$yaml
 ouput_path = args$output
@@ -149,7 +201,6 @@ local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 ### Debugging stuff
 # TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
 #local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
-output_path = paste(local_path, '/user_input/xcms_parameters', sep='')
 #print(yaml_path)
 yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
 
@@ -166,10 +217,9 @@ parameters_all_assays = parse_yaml(yaml_path)
 study = parameters_all_assays$Study
 print(study)
 for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study name
+  processed_data_path = paste(local_path, sprintf('data/processed/%s/%s/', study, assay_name)) 
   print(assay_name)
-  initial_params_output = paste(output_path, sprintf('.unoptimized_params_%s_%s.Rdata',
-                                   study, assay_name), sep='/')
-  
+
   print(parameters_all_assays[[assay_name]])  # Write the initial parameters as Rdata format, since you don't really need them that much
   #saveRDS(parameters_all_assays[assay_name], initial_params_output)
   
@@ -177,7 +227,6 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   # TODO make this os-nonspecific (don't use forward/backslashes)
   data_path = paste(local_path, parameters_all_assays[[assay_name]]$data_path, sep='/')
   file_list = list.files(data_path)
-  
   # Run IPO on peak_picking
   set.seed(1)
   num_files = 1 # use 2 when debugging
@@ -192,7 +241,8 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   t2 = timestamp()
   message(paste('Started to optimize xcmsSet params at ', t1))
   message(paste('Finished optimizing xcmsSet params at ', t2))
-  saveRDS(optimized_params_peak_picking, 'optimized_peak_params.Rdata')
+  saveRDS(optimized_params_peak_picking, paste(processed_data_path, 
+	     'optimized_peak_params.Rdata', sep='/'))
   
   # Run IPO on retcor from the same random set of files
   t1 = timestamp()
@@ -203,8 +253,20 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   t2 = timestamp()
   message(paste('Started to optimize grouping params at ', t1))
   message(paste('Finished optimizing grouping params at ', t2))
-  saveRDS(optimized_params_retention_correction, 'optimized_retcor_params.Rdata')
+  saveRDS(optimized_params_retention_correction, paste(processed_data_path,
+				'optimized_retcor_params.Rdata', sep='/'))
   
+  # Finally, write the best parameters out to a file
+  # Unfortunately, the format of everything but best-settings
+  # is totally fucked up in the IPO code, which I won't bother debugging
+  # so users need to look in the Rdata files if they want to recall 
+  # what the initial parameter settings were for IPO
+  # write to file
+  optimized_param_output = paste(local_path, sprintf('/user_input/xcms_parameters_%s_%s.tsv',
+                                          study, assay_name),
+                      sep='/')
+  params = c(optimized_params_peak_picking, optimized_params_retention_correction)
+  write_final_params(params, optimized_param_output)
 }
 
 

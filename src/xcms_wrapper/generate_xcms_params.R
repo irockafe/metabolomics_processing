@@ -13,6 +13,9 @@ library(optparse)
 library(IPO)
 library(snowfall)
 
+# TODO - replace this stuff with the IPO functions
+#   of default parameters
+
 parser <- OptionParser()
 parser <- add_option(parser, c('--preset'),
 		     type='character', default=NULL,
