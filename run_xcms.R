@@ -232,12 +232,15 @@ set_absolute_path <- function(local_path, given_path) {
   # Decide whether or not user gave you have an absolute path
   # if the known local path (non-git path) if present
   # then assume it's absolute
-  
+ 
+
   # If local path is in the path given on command line, return 
   # command line path. Otherwise, add the local path to it
   if (grepl(local_path, given_path)){
+    print('Absolute path given')
     return(given_path)
   } else {
+    print('relative path given')
     return(paste(local_path, given_path, sep='/'))
   }
 
@@ -253,11 +256,17 @@ if (is.null(args$data)) {
 }
 
 # TODO - make os-agnostic (replace backslashes) 
-print('Output directory!')
-print(args$output)
+# setwd so that paths are likely to be relative if they're
+# operating in sub-directories, or absolute if operating outside
+# current directory tree
+setwd(getwd())
 local_path = system('git rev-parse --show-toplevel', intern=TRUE)
-output_path = set_absolute_path(local_path, args$output)  
-data_path = set_absolute_path(local_path, args$data)
+output_path = args$output  # set_absolute_path(local_path, args$output)  
+data_path = args$data  #set_absolute_path(local_path, args$data)
+print('Output directory!')
+print(output_path)
+print('data path!')
+print(data_path)
 # Done - test for full summary file
 # Done - fails for missing items - test for partial summary file
 # Done - test for summary file
