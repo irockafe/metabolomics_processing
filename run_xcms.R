@@ -111,6 +111,8 @@ run_xcms = function(xcms_params, output_dir, data_dir)
   # The parameters will be adopted from the summary file
   # xcms_params
   
+  # first, create the output directory if doesn't exist
+  dir.create(output_dir)	
   
   # escape spaces in data_dir path
   xcms_feature_table = "xcms_result"
