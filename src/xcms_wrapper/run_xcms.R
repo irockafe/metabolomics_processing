@@ -236,9 +236,9 @@ function set_absolute_path(local_path, given_path) {
   # If local path is in the path given on command line, return 
   # command line path. Otherwise, add the local path to it
   if (grepl(local_path, given_path)){
-    return given_path
+    return(given_path)
   } else {
-    return paste(local_path, given_path, sep='/')
+    return(paste(local_path, given_path, sep='/'))
   }
 
 }
