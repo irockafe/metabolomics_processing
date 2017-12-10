@@ -75,3 +75,8 @@ target/
 
 # Exclude user-specific information: the local path, s3_path
 user_settings.tab
+# Exclude pydoit database files, they only matter locally
+.doit.db.bak
+.doit.db.dat
+.doit.db.dir
+

@@ -102,7 +102,8 @@ def task_process_data():
                                     study=study, assay=assay)
                                  )],
                     'file_dep': ['src/xcms_wrapper/run_xcms.R',
-                                 (RAW_DIR + '/{study}/.organize_stamp')],
+                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
+                                   study=study))],
                     'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
                                  '--summaryfile "%s" ' % xcms_param_file +
                                  '--data "%s" ' % raw_data_path +
