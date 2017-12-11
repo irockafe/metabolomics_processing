@@ -6,6 +6,7 @@
 # Rscript run_xcms.R -sf summary_file.txt
 library(optparse)
 library(BiocParallel)
+library(snowfall)
 # library(CAMERA) TODO!
 
 parser <- OptionParser()
