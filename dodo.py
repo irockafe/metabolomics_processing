@@ -1,6 +1,7 @@
 import os
 import yaml
 import glob
+import multiprocessing
 
 # TODO - make sure you run a script to create user_settings.py
 # first
@@ -16,6 +17,7 @@ DOIT_CONFIG = {'check_file_uptodate': 'timestamp',
 LOCAL_PATH = os.getcwd()
 RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
+CORES = 2 # multiprocessing.cpu_count() 
 # only one line in s3 path
 with open(LOCAL_PATH + '/user_input/s3_path.txt') as f:
     S3_PATH = f.readlines()[0].strip()
@@ -112,7 +114,7 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores 8' 
+                                 '--cores %i' % (CORES / 2) 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
@@ -130,7 +132,7 @@ def task_process_data():
                                  '--yaml {yaml}'.format(yaml=yaml_file) +
                                  '--output {path}'.format(path=
                                      'user_input/xcms_parameters/') +
-                                 '--cores 8'
+                                 '--cores %i' % (CORES / 2)
                                   )],
 
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
@@ -156,7 +158,7 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores 8' 
+                                 '--cores %i' % (CORES / 2) 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
