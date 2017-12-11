@@ -7,13 +7,28 @@ First, make the subtree:
 (--squash omits the history of subproject from main project. Probably what you want)
 
 ---------------------------
+1.5: name the subtree's remote to shorten command line calls
+
+>> git remote add xcms_wrapper https://github.com/irockafe/xcms_wrapper.git
+# Next, not sure why do this, but creates a branch in main thing and makes pushing to subtree's repo easier
+>> git fetch xcms_wrapper  
+--------------------------
 Second, pull changes from repository
->> git subtree pull --prefix src/xcms_wrapper https://github.com/irockafe/xcms_wrapper.git master --squash
+>> git subtree pull --prefix src/xcms_wrapper xcms_wrapper master --squash
 
+OR
+
+>> git subtree pull --prefix src/xcms_wrapper https://github.com/irockafe/xcms_wrapper.git master --squash 
 ---------------------------
+Third, if you made changes in the container repo and want to backport them to the subtree's remote repo (add fixes to the subtree's repo). 
+
+# Create a local branch for backporint
+>> git checkout -b backport-xcms_wrapper xcms_wrapper/master
+>>
 
 
-
+>> git subtree push --prefix src/xcms_wrapper xcms_wrapper master
+Note: This will backport all the changes made in the subtree back to its remote, so container-specific fixes will be (erroneously) pushed back to the subtree's repo 
 ----------------------------
 In case you accidentally updated the subtree repo instead of the native one, stash changes. First commit/stash and push any changes to main project, then reset everything.
 >> git reset --hard
