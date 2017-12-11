@@ -202,7 +202,7 @@ local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 # TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
 #local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
 #print(yaml_path)
-yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
+#yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
 
 ###
 # a named list containing the path to data and the xcms parameters to use
@@ -229,7 +229,7 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   file_list = list.files(data_path)
   # Run IPO on peak_picking
   set.seed(1)
-  num_files = 1 # use 2 when debugging
+  num_files = 5 # use 2 when debugging
   random_files = paste(data_path, sample(file_list, num_files), sep='')
   print(random_files)
   print('Starting to optimize peak_picking_params')
@@ -262,7 +262,7 @@ for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study
   # so users need to look in the Rdata files if they want to recall 
   # what the initial parameter settings were for IPO
   # write to file
-  optimized_param_output = paste(local_path, sprintf('/user_input/xcms_parameters_%s_%s.tsv',
+  optimized_param_output = paste(local_path, sprintf('/user_input/xcms_parameters/xcms_params_%s_%s.tsv',
                                           study, assay_name),
                       sep='/')
   params = c(optimized_params_peak_picking, optimized_params_retention_correction)

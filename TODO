@@ -1,4 +1,8 @@
 Need to add following packages to anaconda myself:
+(hack right now is to just download from CRAN, but that isn't good for being able to move the software around easily)
 - IPO
 - optparse
 - snowfall
+
+Need to install following packages from github:
+- igraph (something got fucked up in the makefile in the most recent release so some c files failed to compile https://stackoverflow.com/questions/45318188/getting-error-in-function-igraph-write-graph-graphml-while-installing-igrap/45362040#comment77805669_45362040)
