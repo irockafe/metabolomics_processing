@@ -8,7 +8,7 @@ prefilter	0 5000
 bw	0.25
 mzwid	0.003
 minfrac	0
-minsamp	1
+minsamp	7
 
 ### retention-correction parameters
 retcor_method	obiwarp
