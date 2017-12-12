@@ -17,7 +17,7 @@ DOIT_CONFIG = {'check_file_uptodate': 'timestamp',
 LOCAL_PATH = os.getcwd()
 RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
-CORES = 2 # multiprocessing.cpu_count() 
+CORES = multiprocessing.cpu_count() 
 # only one line in s3 path
 with open(LOCAL_PATH + '/user_input/s3_path.txt') as f:
     S3_PATH = f.readlines()[0].strip()
