@@ -114,7 +114,7 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES / 2) 
+                                 '--cores %i' % (CORES) 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
@@ -132,7 +132,7 @@ def task_process_data():
                                  '--yaml {yaml}'.format(yaml=yaml_file) +
                                  '--output {path}'.format(path=
                                      'user_input/xcms_parameters/') +
-                                 '--cores %i' % (CORES / 2)
+                                 '--cores %i' % (CORES)
                                   )],
 
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
@@ -158,7 +158,7 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES / 2) 
+                                 '--cores %i' % (CORES) 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
