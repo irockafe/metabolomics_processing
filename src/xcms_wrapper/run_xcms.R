@@ -202,8 +202,7 @@ run_xcms = function(xcms_params, output_dir, data_dir)
   # Move back to output_dir and write out your feature table
   setwd(output_dir)
   xcms_peaklist = xcms::peakTable(xset3, filebase=xcms_feature_table)
-  #write.csv(xcms_peaklist, paste(xcms_feature_table, sep='_'))
-  print("Finished xcms!")
+  message("Finished xcms!")
 }
 
 print(args$summaryfile)
@@ -272,4 +271,4 @@ print(data_path)
 # Done - fails for missing items - test for partial summary file
 # Done - test for summary file
 
-system.time(debug(run_xcms(xcms_params, output_path, data_path)))
+run_xcms(xcms_params, output_path, data_path)
