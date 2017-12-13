@@ -2,7 +2,9 @@ import os
 import yaml
 import glob
 import multiprocessing
-
+# my code
+import project_fxns.project_fxns as project_fxns
+import data.download_study as download_study
 # TODO - make sure you run a script to create user_settings.py
 # first
 
@@ -36,8 +38,22 @@ for f in file_organizers:
     STUDY_DICT[study_name] = my_yaml[study_name]['assays'].keys()
 print('Study Dicitonary\n', STUDY_DICT)
 
-# Tasks ###############################3
+# Useful Functions ################
+# TODO move these into their own folder, maybe? less cluttered?
+def delete_recursive(path, delete_hidden=False):
+    '''
+    Walk down a directory and delete files recursively
+    '''
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if delete_hidden:
+                os.remove(os.path.join(root, name))
+            if not delete_hidden:
+                if file[0] != '.':
+                    os.remove(os.path.join(root, name))
 
+
+# Tasks ###############################3
 
 def task_process_data():
     '''Download, organize, xcms process raw data, then clean it up
@@ -162,6 +178,24 @@ def task_process_data():
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
+                # write out a warning about the ppm 
+                msg = ('\n%s_%s: ppm might need to ' % (study, assay)
+                       'be adjusted. I guesstimatedsed the ppm' +
+                       'based on the mass-spec listed in the .yaml file ' +
+                       'Make sure to check the log files to see if' +
+                       'there are errors or warnings\n'
                 }
-            # clean-up raw data generator task to remove raw data from local
+                with open('warnings.log', 'a') as f:
+                    f.write(msg)
+        
+        # Sync raw and processed data back to aws 
+        raw_data_path = RAW_DIR + '/' + study
+        s3_path = project_fxns.get_s3_path(study)        
+        if s3_path:
+            # sync raw data
+            download_study.s3_sync_to_aws(s3_path, study, 
+                raw_data_path)  #path to mtbls315)
+        # clean-up raw data folder of everything except dot files
+        # means need to traverse directory tree and run rm * in each subfolder
+        delete_recursive(raw_data_path, delete_hidden=False)
 #
