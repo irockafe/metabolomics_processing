@@ -192,27 +192,27 @@ def download_ftp(ftp_path, output_dir):
                     )
     subprocess.call(wget_command, shell=True)
 
-
-output_dir = make_dir(args.study)
-# Check if there is an s3 bucket and sync from there if exists
-s3_path = project_fxns.get_s3_path(args.study)
-s3_exists = s3_bucket_exists(s3_path, args.study)
-if s3_exists:  # sync from s3 and exit script
-    s3_sync_to_local(s3_path, args.study, output_dir)
-    # exit()
-
-# If didn't find s3 bucket, get ftp link and download from database
-else:
-    ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
-    download_ftp(ftp_path, output_dir)
-
-# If script is successful, make a file-stamp telling me
-# that download was successful
-make_dirstamp = "touch '{dir}/.download_stamp'".format(
-            dir=output_dir)
-subprocess.call(make_dirstamp, shell=True)
-
-# sync to aws
-if s3_path:  # Assumes that will return None if no S3 specified
-    s3_sync_to_aws(s3_path, args.study, output_dir)
-#
+if __name__ == '__main__':
+    output_dir = make_dir(args.study)
+    # Check if there is an s3 bucket and sync from there if exists
+    s3_path = project_fxns.get_s3_path(args.study)
+    s3_exists = s3_bucket_exists(s3_path, args.study)
+    if s3_exists:  # sync from s3 and exit script
+        s3_sync_to_local(s3_path, args.study, output_dir)
+        # exit()
+    
+    # If didn't find s3 bucket, get ftp link and download from database
+    else:
+        ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
+        download_ftp(ftp_path, output_dir)
+    
+    # If script is successful, make a file-stamp telling me
+    # that download was successful
+    make_dirstamp = "touch '{dir}/.download_stamp'".format(
+                dir=output_dir)
+    subprocess.call(make_dirstamp, shell=True)
+    
+    # sync to aws
+    if s3_path:  # Assumes that will return None if no S3 specified
+        s3_sync_to_aws(s3_path, args.study, output_dir)
+    #
