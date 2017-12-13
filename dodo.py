@@ -5,6 +5,7 @@ import multiprocessing
 # my code
 import project_fxns.project_fxns as project_fxns
 import data.download_study as download_study
+
 # TODO - make sure you run a script to create user_settings.py
 # first
 
@@ -21,6 +22,7 @@ RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
 CORES = multiprocessing.cpu_count() 
 # only one line in s3 path
+# TODO make sure this works if they don't provide a path
 with open(LOCAL_PATH + '/user_input/s3_path.txt') as f:
     S3_PATH = f.readlines()[0].strip()
 print S3_PATH
@@ -51,6 +53,13 @@ def delete_recursive(path, delete_hidden=False):
             if not delete_hidden:
                 if file[0] != '.':
                     os.remove(os.path.join(root, name))
+
+
+def sync_to_s3(study, raw_data_path):
+    if S3_PATH:
+        # sync raw data
+        download_study.s3_sync_to_aws(S3_PATH, study, 
+            raw_data_path)  #path to mtbls315)
 
 
 # Tasks ###############################3
@@ -112,7 +121,7 @@ def task_process_data():
             processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
                 study=study, assay=assay)
 
-            # If xcms parameters already exist
+            # If xcms parameters already exist, run xcms
             if xcms_param_file in all_xcms_params:
                 yield {
                     'targets': [(PROCESSED_DIR +
@@ -138,17 +147,18 @@ def task_process_data():
 
             else:
                 # Else, run IPO to generate/optimize params
+                print 'Didnt find xcms params. Generating with IPO'
                 yield {
                     'targets': [xcms_param_file],
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                    study=study))],
                     'actions': [('Rscript src/xcms_wrapper/' +
-                                 'optimize_xcms_params_ipo.R' + 
-                                 '--yaml {yaml}'.format(yaml=yaml_file) +
-                                 '--output {path}'.format(path=
+                                 ' optimize_xcms_params_ipo.R' + 
+                                 ' --yaml {yaml}'.format(yaml=yaml_file) +
+                                 ' --output {path}'.format(path=
                                      'user_input/xcms_parameters/') +
-                                 '--cores %i' % (CORES)
+                                 ' --cores %i' % (CORES)
                                   )],
 
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
@@ -168,34 +178,69 @@ def task_process_data():
                                     '{study}_{assay}.tsv'.format(
                                         study=study, assay=assay))
                                   ],
-                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
-                                 '--summaryfile "%s" ' % xcms_param_file +
-                                 '--data "%s" ' % raw_data_path +
-                                 '--output "{path}" '.format(
+                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R' +
+                                 ' --summaryfile "%s" ' % xcms_param_file +
+                                 ' --data "%s" ' % raw_data_path +
+                                 ' --output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES) 
+                                 ' --cores %i' % (CORES) 
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
+                         }
                 # write out a warning about the ppm 
-                msg = ('\n%s_%s: ppm might need to ' % (study, assay)
+                msg = ('\n%s_%s: ppm might need to ' % (study, assay) + 
                        'be adjusted. I guesstimatedsed the ppm' +
                        'based on the mass-spec listed in the .yaml file ' +
                        'Make sure to check the log files to see if' +
                        'there are errors or warnings\n'
-                }
+                       )
+                       
                 with open('warnings.log', 'a') as f:
                     f.write(msg)
         
         # Sync raw and processed data back to aws 
         raw_data_path = RAW_DIR + '/' + study
-        s3_path = project_fxns.get_s3_path(study)        
-        if s3_path:
-            # sync raw data
-            download_study.s3_sync_to_aws(s3_path, study, 
-                raw_data_path)  #path to mtbls315)
+        if S3_PATH:  # sync to s3
+            # target paths
+            sync_stamp = '.s3_sync_stamp'
+            raw_sync_stamp = raw_data_path + '/' + sync_stamp
+            proc_sync_stamp = processed_output_path + '/' + sync_stamp
+            # file_dep
+            xcms_outputs = [os.path.join(PROCESSED_DIR, study, 
+                            i, 'xcms_result.tsv')  for i in assays] 
+            yield {# targets are dotfiles that claim we succeeded at this task
+                   'targets': [raw_sync_stamp, proc_sync_stamp], 
+                   # adding two lists of strings makes another list
+                   'file_dep': xcms_outputs + ['src/data/download_study.py'],
+                   # action is a python function! :)
+                   # see python-action in pydoit documentation
+                   'actions': [(download_study.s3_sync_to_aws, 
+                                   [S3_PATH, study, raw_data_path]),
+                               (download_study.s3_sync_to_aws,
+                                   [S3_PATH, study, processed_output_path]),
+                               'touch {raw} {proc}'.format(
+                                   raw = (raw_data_path + 
+                                       '/' + '.s3_sync_stamp'),
+                                   proc = (processed_output_path + 
+                                           '/' + '.s3_sync_stamp')
+                                )
+                               ],  
+                   'name': 'sync_to_aws_{study}'.format(study=study)
+                   }
+
         # clean-up raw data folder of everything except dot files
         # means need to traverse directory tree and run rm * in each subfolder
-        delete_recursive(raw_data_path, delete_hidden=False)
+        cleaned_stamp = raw_data_path + '/' + '.cleaned_up'
+        yield {'targets': [cleaned_stamp],
+               'file_dep': xcms_outputs,  # is a list
+               'actions': [(delete_recursive, [], {'path': raw_data_path, 
+                               'delete_hidden': False}),
+                           'touch {clean_up}'.format(clean_up=cleaned_stamp) 
+                           ],
+               'name': 'clean_up_{study}'.format(study=study)
+               }
+
+# TODO tasks to process xcms_results files
 #
