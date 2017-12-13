@@ -13,14 +13,14 @@ import data.download_study as download_study
 # and automagically update when things become out of date
 # based on timestamp, not MD5 sum
 # (b/c we have big files, MD5 sums would be a wste of time
-DOIT_CONFIG = {'check_file_uptodate': 'timestamp',
+DOIT_CONFIG = {'check_file_uptodate': 'timestamp_newer',
                'verbosity': 2}
 
 # Globals ########
 LOCAL_PATH = os.getcwd()
 RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
-CORES = multiprocessing.cpu_count() 
+CORES = multiprocessing.cpu_count()
 # only one line in s3 path
 # TODO make sure this works if they don't provide a path
 with open(LOCAL_PATH + '/user_input/s3_path.txt') as f:
@@ -58,7 +58,7 @@ def delete_recursive(path, delete_hidden=False):
 def sync_to_s3(study, raw_data_path):
     if S3_PATH:
         # sync raw data
-        download_study.s3_sync_to_aws(S3_PATH, study, 
+        download_study.s3_sync_to_aws(S3_PATH, study,
             raw_data_path)  #path to mtbls315)
 
 
@@ -139,7 +139,7 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES) 
+                                 '--cores %i' % (CORES)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
@@ -154,7 +154,7 @@ def task_process_data():
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                    study=study))],
                     'actions': [('Rscript src/xcms_wrapper/' +
-                                 ' optimize_xcms_params_ipo.R' + 
+                                 ' optimize_xcms_params_ipo.R' +
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
                                  ' --output {path}'.format(path=
                                      'user_input/xcms_parameters/') +
@@ -184,23 +184,23 @@ def task_process_data():
                                  ' --output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 ' --cores %i' % (CORES) 
+                                 ' --cores %i' % (CORES)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
                          }
-                # write out a warning about the ppm 
-                msg = ('\n%s_%s: ppm might need to ' % (study, assay) + 
+                # write out a warning about the ppm
+                msg = ('\n%s_%s: ppm might need to ' % (study, assay) +
                        'be adjusted. I guesstimatedsed the ppm' +
                        'based on the mass-spec listed in the .yaml file ' +
                        'Make sure to check the log files to see if' +
                        'there are errors or warnings\n'
                        )
-                       
+
                 with open('warnings.log', 'a') as f:
                     f.write(msg)
-        
-        # Sync raw and processed data back to aws 
+
+        # Sync raw and processed data back to aws
         raw_data_path = RAW_DIR + '/' + study
         if S3_PATH:  # sync to s3
             # target paths
@@ -208,25 +208,25 @@ def task_process_data():
             raw_sync_stamp = raw_data_path + '/' + sync_stamp
             proc_sync_stamp = processed_output_path + '/' + sync_stamp
             # file_dep
-            xcms_outputs = [os.path.join(PROCESSED_DIR, study, 
-                            i, 'xcms_result.tsv')  for i in assays] 
+            xcms_outputs = [os.path.join(PROCESSED_DIR, study,
+                            i, 'xcms_result.tsv')  for i in assays]
             yield {# targets are dotfiles that claim we succeeded at this task
-                   'targets': [raw_sync_stamp, proc_sync_stamp], 
+                   'targets': [raw_sync_stamp, proc_sync_stamp],
                    # adding two lists of strings makes another list
                    'file_dep': xcms_outputs + ['src/data/download_study.py'],
                    # action is a python function! :)
                    # see python-action in pydoit documentation
-                   'actions': [(download_study.s3_sync_to_aws, 
+                   'actions': [(download_study.s3_sync_to_aws,
                                    [S3_PATH, study, raw_data_path]),
                                (download_study.s3_sync_to_aws,
                                    [S3_PATH, study, processed_output_path]),
                                'touch {raw} {proc}'.format(
-                                   raw = (raw_data_path + 
+                                   raw = (raw_data_path +
                                        '/' + '.s3_sync_stamp'),
-                                   proc = (processed_output_path + 
+                                   proc = (processed_output_path +
                                            '/' + '.s3_sync_stamp')
                                 )
-                               ],  
+                               ],
                    'name': 'sync_to_aws_{study}'.format(study=study)
                    }
 
@@ -235,9 +235,9 @@ def task_process_data():
         cleaned_stamp = raw_data_path + '/' + '.cleaned_up'
         yield {'targets': [cleaned_stamp],
                'file_dep': xcms_outputs,  # is a list
-               'actions': [(delete_recursive, [], {'path': raw_data_path, 
+               'actions': [(delete_recursive, [], {'path': raw_data_path,
                                'delete_hidden': False}),
-                           'touch {clean_up}'.format(clean_up=cleaned_stamp) 
+                           'touch {clean_up}'.format(clean_up=cleaned_stamp)
                            ],
                'name': 'clean_up_{study}'.format(study=study)
                }
