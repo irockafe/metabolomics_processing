@@ -1,5 +1,6 @@
-DOIT_CONFIG = {'check_file_uptodate': 'timestamp',
-                              'verbosity': 2}
+DOIT_CONFIG = {'check_file_uptodate': 'timestamp_newer',
+               'verbosity': 2}
+
 
 def task_touch():
     yield {
