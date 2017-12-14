@@ -12,9 +12,10 @@ parser <- add_option(parser, c('--output', '-o'), type='character',
 parser <- add_option(parser, c('--yaml', '-y'), type='character',
 		     help=paste('Path to yaml file with name of study
 				chromatography used, and instrument type'))
-# TODO delete this flag. use rev-parse instead to define local project dir
-parser <- add_option(parser, c('--local'), type='character',
-                     help=paste('Required. Local path to the project '))
+parser <- add_option(parser, c('--assay', '-a'), type='character',
+			default='all', help=paste('Which assay, listed in the yaml
+                        file do you want to parametrize through IPO? Default is
+                        to processa all assays'))
 parser <- add_option(parser, c('--cores'), type='integer',
                      default = 4,
                      help=paste('Optional, number of cores to 
@@ -185,6 +186,7 @@ retcor_method\t%s
 }
 
 ### debug shit
+'
 peak_params = readRDS('optimized_peak_params.Rdata')
 retcor_params = readRDS('optimized_retcor_params.Rdata')
 params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
@@ -192,6 +194,7 @@ output = '.'
 write_final_params(params, output)
 
 print(qupewotuqpoewutqpo)
+'
 ### debug shit
 
 yaml_path = args$yaml
@@ -216,6 +219,8 @@ parameters_all_assays = parse_yaml(yaml_path)
 
 study = parameters_all_assays$Study
 print(study)
+# TODO re-write so that it doesn't automatically 
+# run IPO on all assays in the yaml file
 for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study name
   processed_data_path = paste(local_path, sprintf('data/processed/%s/%s/', study, assay_name)) 
   print(assay_name)
