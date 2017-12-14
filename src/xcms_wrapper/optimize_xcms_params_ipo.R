@@ -228,7 +228,7 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
                        parameters_all_assays[[assay_name]]$retcor_params)
     initial_param_path = file.path(local_path, output_path, sprintf('unoptimized_xcms_params_%s_%s.tsv',
                                                        study, assay_name))
-    )
+    
     write_params(initial_params, total_files, initial_param_path)
     
     # Run IPO on peak_picking
