@@ -6,7 +6,9 @@ import multiprocessing
 import project_fxns.project_fxns as project_fxns
 import data.download_study as download_study
 
-
+# TODO!!! when Rscript fails, it doesn't crash doit. This is annoying and dumb
+#       If next tasks depend on that file, fine. it'll crash eventually, but
+#       figuring out that it's because of the shitty task that failed is annoying
 # TODO!!! S3 sync ends up updating the timestamps on everything
 #  to the most recent sync date. That's annoying. Try to 
 #  figure out how to make the timestamps be modified time instead
@@ -159,11 +161,11 @@ def task_process_data():
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                    study=study))],
-                    'actions': [('Rscript src/xcms_wrapper/' +
-                                 ' optimize_xcms_params_ipo.R' +
+                    'actions': [('Rscript src/xcms_wrapper/optimize_xcms_params_ipo.R' +
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
+                                 ' --assay {assay}'.format(assay=assay) +
                                  ' --output {path}'.format(path=
-                                     'user_input/xcms_parameters/') +
+                                      'user_input/xcms_parameters/') +
                                  ' --cores %i' % (CORES)
                                   )],
 
