@@ -6,6 +6,10 @@ import multiprocessing
 import project_fxns.project_fxns as project_fxns
 import data.download_study as download_study
 
+
+# TODO!!! S3 sync ends up updating the timestamps on everything
+#  to the most recent sync date. That's annoying. Try to 
+#  figure out how to make the timestamps be modified time instead
 # TODO - make sure you run a script to create user_settings.py
 # first
 
@@ -123,6 +127,8 @@ def task_process_data():
 
             # If xcms parameters already exist, run xcms
             if xcms_param_file in all_xcms_params:
+                print 'params file', xcms_param_file
+                print 'all params files', all_xcms_params
                 yield {
                     'targets': [(PROCESSED_DIR +
                                 '{study}/{assay}/xcms_result.tsv'.format(
