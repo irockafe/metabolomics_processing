@@ -15,17 +15,15 @@ parser <- add_option(parser, c('--yaml', '-y'), type='character',
 parser <- add_option(parser, c('--assay', '-a'), type='character',
 			default='all', help=paste('Which assay, listed in the yaml
                         file do you want to parametrize through IPO? Default is
-                        to processa all assays'))
+                        to process all assays. If not choosing all assays, you can only list one assay'))
 parser <- add_option(parser, c('--cores'), type='integer',
                      default = 4,
                      help=paste('Optional, number of cores to 
                         run things with'))
+parser <- add_option(parser, c('--numFiles'), type='character',
+                     default=5, help=paste('Number of files to use when optimizing xcms parameters'))
 args = parse_args(parser)
 
-# Set number of cores to use
-print(paste('Number of cores ', args$cores))
-register(MulticoreParam(args$core))
-print(bpparam())
 
 
 parse_yaml <- function(yaml_path) {
@@ -122,12 +120,13 @@ get_initial_params <- function(mass_spec, chromatography) {
 }
 
 
-write_final_params <- function(ipo_params, 
+write_params <- function(ipo_params, total_files,
                          output_file_path) {
 	# write out the optimized parameters
   # INPUT - output_file_path - whole-path, including filename
   #   ipo_params - named list containing parameters from IPO
-  
+  # total_files - the total number of Mass-Spec files that will be processed
+  #     Use this to set the minimum samples needed to define a group, and possibly to prefilter
   # First write out the most important parameters
   peak_pick_params = sprintf(
 "### Peak Detection Parameters
@@ -136,7 +135,7 @@ ppm\t%s
 peak_width\t%s %s
 prefilter\t%s %s
 ",
-    "CentWave", params$ppm,
+    "CentWave", ipo_params$ppm,
     ipo_params$min_peakwidth, ipo_params$max_peakwidth,
     ipo_params$prefilter, ipo_params$value_of_prefilter
   )
@@ -149,7 +148,7 @@ minsamp\t%s
 ",  ipo_params$bw,
     ipo_params$mzwid, 
     ipo_params$minfrac, 
-    ipo_params$minsamp
+    ceiling(total_files / 10) # default to 10% of samples as minimum needed for a group
   )
   
   retcor_params = sprintf(
@@ -185,93 +184,136 @@ retcor_method\t%s
   write(param_string, file=output_file_path)
 }
 
-### debug shit
-'
-peak_params = readRDS('optimized_peak_params.Rdata')
-retcor_params = readRDS('optimized_retcor_params.Rdata')
-params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
-output = '.'
-write_final_params(params, output)
 
-print(qupewotuqpoewutqpo)
-'
-### debug shit
+run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files) {
+  # GOAL: Run IPO to optimize selected xcms parameters
+  # INPUT: assays: a list of assay names that should match the yaml file
+  #    local_path: the git repo's home path
+  #    study: The unique name of study (usually MTBLS or STxxx), taken from the yaml file.
+  #    parameters_all_assays: baseline IPO parameters, generated with parse_yaml(). 
+  #         These parameters vary depending on the Mass Spec used and the chromatography listed
+  #         in the yaml file. See get_initial_params() for the types currently supported
+  #    num_files: The number of files in the data/raw/{study}/{assay} directory
+  #         that will be processed. The data directory should only contain raw data files for this reason
+  #         This number will be used to set the minimum number of samples that must be in a group
+  #         for xcms grouping. Default fraction is set in write_params()
+  # OUTPUT: 
+  #    unoptimized parameters: /user_input/xcms_parameters/unoptimized_xcms_params_{study}_{assay}.tsv
+  #    optimized peak parameters (Rdata)
+  #    optimized retcor parameters (Rdata)
+  #    final xcms parameters (tsv): /user_input/xcms_parameters/xcms_params_{study}_{assay}.tsv
+  
+  for (assay_name in assays) { # first entry is study name
+    processed_data_path = file.path(local_path, sprintf('data/processed/%s/%s/', study, assay_name))
+    print(processed_data_path)
+    dir.create(processed_data_path, recursive=TRUE)
+    setwd(processed_data_path)
+    print(assay_name)
+    
+    # If assay name is wrong, print message and stop code
+    if (is.null(parameters_all_assays[[assay_name]])){
+      stop('The assay name provided was not found in the yaml file. Check the spelling on the --assay flag, or
+           check the spelling of the yaml file (user_input/study_info/))')
+    } else{
+      print(paste('About to start on: ', assay_name))
+    }
+    
+    # select files to use
+    data_path = file.path(local_path, parameters_all_assays[[assay_name]]$data_path)
+    file_list = list.files(data_path)
+    total_files = length(file_list)
+    
+    # Write the initial parameters for future reference
+    initial_params = c(parameters_all_assays[[assay_name]]$peak_pick_params, 
+                       parameters_all_assays[[assay_name]]$retcor_params)
+    initial_param_path = file.path(local_path, sprintf('/user_input/xcms_parameters/unoptimized_xcms_params_%s_%s.tsv',
+                                                       study, assay_name)
+    )
+    write_params(initial_params, total_files, initial_param_path)
+    
+    # Run IPO on peak_picking
+    set.seed(1)
+    random_files = file.path(data_path, sample(file_list, num_files))
+    print(random_files)
+    print('Starting to optimize peak_picking_params')
+    t1 = timestamp()
+    optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
+                                                         params = parameters_all_assays[[assay_name]]$peak_pick_params,
+                                                         plot=TRUE,
+                                                         nSlaves=0  # because default is 4, which causes an error since we're using bpparam()
+    )
+    t2 = timestamp()
+    message(paste('Started to optimize xcmsSet params at ', t1))
+    message(paste('Finished optimizing xcmsSet params at ', t2))
+    saveRDS(optimized_params_peak_picking, file.path(processed_data_path, 
+                                                     'optimized_peak_params.Rdata'))
+    
+    # Run IPO on retcor from the same random set of files
+    message('Starting retcor optimization')
+    t1 = timestamp()
+    optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
+                                                                  params = parameters_all_assays[[assay_name]]$retcor_params,
+                                                                  plot=TRUE,
+                                                                  nSlaves=0)
+    t2 = timestamp()
+    message(paste('Started to optimize grouping params at ', t1))
+    message(paste('Finished optimizing grouping params at ', t2))
+    saveRDS(optimized_params_retention_correction, paste(processed_data_path,
+                                                         'optimized_retcor_params.Rdata', sep='/'))
+    
+    # Finally, write the best parameters out to a file
+    optimized_param_output = file.path(local_path, sprintf('/user_input/xcms_parameters/xcms_params_%s_%s.tsv',
+                                                           study, assay_name))
+    params = c(optimized_params_peak_picking, optimized_params_retention_correction)
+    write_params(params, optimized_param_output)
+  }
+}
+
+
+# Set number of cores to use
+print(paste('Number of cores ', args$cores))
+register(MulticoreParam(args$core))
+print(bpparam())
 
 yaml_path = args$yaml
 ouput_path = args$output
+num_files = args$numFiles
+
+
+"
+####### debug shit
+peak_params = readRDS('optimized_peak_params.Rdata')
+retcor_params = readRDS('optimized_retcor_params.Rdata')
+params = c(peak_params$best_settings$parameters, retcor_params$best_settings)
+yaml_path = file.path(local_path, 'user_input/study_info/MTBLS315.yaml')
+print(yaml_path)
+####### debug shit
+"
+
 local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 
-### Debugging stuff
-# TODO get local_path programatically - look for .home folder or something like that, which will unambiguously ID the base directory (i.e. A .git repo will be present in subgit directories
-#local_path = '/home/ubuntu/users/isaac/projects/revo_healthcare/'
-#print(yaml_path)
-#yaml_path = paste(local_path, '/user_input/organize_raw_data/organize_data_MTBLS315.yaml', sep='')
-
-###
-# a named list containing the path to data and the xcms parameters to use
+# get a named list containing the path to data and the initial xcms parameters to use
+# based on the instrument type and chromatography listed in the yaml file
 parameters_all_assays = parse_yaml(yaml_path)
 
-# loop through all the assays. write out the parameters
-# from initial attempt
+
 # then do the peak-picking optimization, write params
 # then do retcor optimization, write all the params,
 # then just write the params to be used by xcms? (b/c all params are overkill) or just order them better
 
 study = parameters_all_assays$Study
-print(study)
-# TODO re-write so that it doesn't automatically 
-# run IPO on all assays in the yaml file
-for (assay_name in names(parameters_all_assays[c(-1)])) { # first entry is study name
-  processed_data_path = paste(local_path, sprintf('data/processed/%s/%s/', study, assay_name)) 
-  print(assay_name)
+print(paste('Study: ', study))
 
-  print(parameters_all_assays[[assay_name]])  # Write the initial parameters as Rdata format, since you don't really need them that much
-  #saveRDS(parameters_all_assays[assay_name], initial_params_output)
-  
-  # select files to use
-  # TODO make this os-nonspecific (don't use forward/backslashes)
-  data_path = paste(local_path, parameters_all_assays[[assay_name]]$data_path, sep='/')
-  file_list = list.files(data_path)
-  # Run IPO on peak_picking
-  set.seed(1)
-  num_files = 5 # use 2 when debugging
-  random_files = paste(data_path, sample(file_list, num_files), sep='')
-  print(random_files)
-  print('Starting to optimize peak_picking_params')
-  t1 = timestamp()
-  optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
-                                                       params = parameters_all_assays[[assay_name]]$peak_pick_params,
-                                                       plot=TRUE,
-                                                       nSlaves=0)
-  t2 = timestamp()
-  message(paste('Started to optimize xcmsSet params at ', t1))
-  message(paste('Finished optimizing xcmsSet params at ', t2))
-  saveRDS(optimized_params_peak_picking, paste(processed_data_path, 
-	     'optimized_peak_params.Rdata', sep='/'))
-  
-  # Run IPO on retcor from the same random set of files
-  t1 = timestamp()
-  optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
-                                                                params = parameters_all_assays[[assay_name]]$retcor_params,
-                                                                plot=TRUE,
-                                                                nSlaves=0)
-  t2 = timestamp()
-  message(paste('Started to optimize grouping params at ', t1))
-  message(paste('Finished optimizing grouping params at ', t2))
-  saveRDS(optimized_params_retention_correction, paste(processed_data_path,
-				'optimized_retcor_params.Rdata', sep='/'))
-  
-  # Finally, write the best parameters out to a file
-  # Unfortunately, the format of everything but best-settings
-  # is totally fucked up in the IPO code, which I won't bother debugging
-  # so users need to look in the Rdata files if they want to recall 
-  # what the initial parameter settings were for IPO
-  # write to file
-  optimized_param_output = paste(local_path, sprintf('/user_input/xcms_parameters/xcms_params_%s_%s.tsv',
-                                          study, assay_name),
-                      sep='/')
-  params = c(optimized_params_peak_picking, optimized_params_retention_correction)
-  write_final_params(params, optimized_param_output)
+# Run on all assays found in the yaml file, unless args$assay != 'all'
+# then run only on a single assay
+if (args$assay =='all') {
+  assays = names(parameters_all_assays[c(-1)])
+} else {
+  assays = args$assay
 }
+
+# Loop through assays and run IPO, outputting peak_picking, retcor parameters, and 
+# finally writing the parameters to be used by xcms
+run_ipo(assays, local_path, study, parameters_all_assays, num_files)
 
 
