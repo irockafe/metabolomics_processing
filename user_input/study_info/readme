@@ -1,14 +1,36 @@
-Files that are used with /src/data/organize_raw_data.py
-to move raw data files into useful folders that xcms will
-use to process data from a particular experiment/run.
+yaml files here are used to tell various scripts where raw data is and what type of Mass-spectrometer and chromatography was used for setting xcms parameters.
 
-Example:
-python /src/data/organize_raw_data.py -sf organize_data_mtbls315.tab
+Layout of files is as follows keys in {brackets} are variable by the user.
+Those that are not bracketed are not variable, they're keys that are used
+by scripts to find values:
 
-Mostly separating projects by positive/negative mode and sending to their own folders
+{Study_name}:  # key is variable, i.e MTBLS72, MTBLS315, etc
+               # no value
+   assays:  # key isn't variable, no value
+      {assay_name}:  # key is variable - will become the name of subfolder
+                     # no value
+         files: # bash mv commands to organize files into a subfolder
+                # values are list of strings
+                # Example: - '*POS*.mzML'
+                #          - '*P*.mzML'
+         chromatography:  # Options are [hplc, uplc]
+                          # Used to set initial parameters for xcms
+         mass_spectrometer:  # Options are [qtof, qtof_hires, orbitrap]
+                             # Used to set initial parameters for xcms
+         column:  # Not yet used by downstream scripts. Be generic,
+                  # C8, C18, HILIC, not C8 2.1mm x 0.1mm. Goal is to
+                  # be able to filter studies by the column used
+         data_path:  # Where the raw data for this assay will be
+                     # Generally will be data/raw/{study}/{assay}
+   disease:  # list of tags that describe the disease 
+                  
+          
 
------------------------------------------------------
-FILE FORMAT
-first line: gives path to raw data
-second line: new directory for files, followed by mv commands needed to move files you want. Each command is tab-delimited 
 
+
+
+More yaml info:
+(useful site with good examples)
+   http://docs.ansible.com/ansible/latest/YAMLSyntax.html
+(official documentation)
+   http://www.yaml.org/start.html

@@ -1,0 +1,26 @@
+MTBLS72:
+    assays:
+        pos:
+            files:
+                - "*POS*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            column:
+                "C18"
+            data_path:
+                "data/raw/MTBLS72/pos/"
+        neg:
+            files:
+                - "*NEG*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            column:
+                "C18"
+            data_path:
+                "data/raw/MTBLS72/neg/"
+    disease:
+        - "alzheimers"

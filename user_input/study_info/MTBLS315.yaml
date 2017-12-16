@@ -5,6 +5,8 @@ MTBLS315:
                 - "*_P.mzML"
             chromatography:
                 "uplc"
+            column:
+                "C18"
             mass_spectrometer:
                 "orbitrap"
             data_path:
@@ -14,7 +16,11 @@ MTBLS315:
                 - "*_N.mzML"
             chromatography:
                 "uplc"
+            column:
+                "C18"
             mass_spectrometer:
                 "orbitrap"
             data_path:
                 "data/raw/MTBLS315/uhplc_neg/"
+    disease:
+        malaria
