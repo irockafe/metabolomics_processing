@@ -105,8 +105,8 @@ get_initial_params <- function(mass_spec, chromatography) {
   retcor_params = IPO::getDefaultRetGroupStartingParams()
   retcor_params$bw = chromatograph_params[[chromatography]][['bw']]
   # Don't deal with these params, just use defaults
-  retcor_params$gapInit = NULL
-  retcor_params$gapExtend = NULL
+  retcor_params$gapInit = 0.3  # Default for xcms using cor_opt distance fxn
+  retcor_params$gapExtend = 2.4  # Default for xcms using cor_opt distance fxn
   retcor_params$profStep = 1
   
   # Just require 1 sample to define a group, especially for optimization, since you're only using 5-ish samples
@@ -128,6 +128,10 @@ write_params <- function(ipo_params, total_files,
   # total_files - the total number of Mass-Spec files that will be processed
   #     Use this to set the minimum samples needed to define a group, and possibly to prefilter
   # First write out the most important parameters
+  
+  # Print out for debugging purposes
+  print(ipo_params)  
+
   peak_pick_params = sprintf(
 "### Peak Detection Parameters
 peak_picking\t%s
