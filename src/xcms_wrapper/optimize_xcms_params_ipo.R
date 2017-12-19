@@ -268,7 +268,7 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
     # Finally, write the best parameters out to a file
     optimized_param_output = file.path(local_path, output_path, sprintf('xcms_params_%s_%s.tsv',
                                                            study, assay_name))
-    params = c(optimized_params_peak_picking, optimized_params_retention_correction)
+    params = c(optimized_params_peak_picking$best_settings$parameters, optimized_params_retention_correction$best_settings)
     write_params(params, total_files, optimized_param_output)
   }
 }
