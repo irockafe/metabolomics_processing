@@ -57,7 +57,7 @@ def delete_recursive(path, delete_hidden=False):
             if delete_hidden:
                 os.remove(os.path.join(root, name))
             if not delete_hidden:
-                if file[0] != '.':
+                if name[0] != '.':
                     os.remove(os.path.join(root, name))
 
 
@@ -78,12 +78,16 @@ def task_process_data():
     '''
     # for loop over entries in STUDY_DICT
     for study in STUDY_DICT.keys():
+        path_raw_data = RAW_DIR + '/{study}/'.format(
+                study=study)]
         # Download study
         yield {
-            'targets': [RAW_DIR + '/{study}/.download_stamp'.format(
-                study=study)],
+            'targets': [path_raw_data],
             'file_dep': ['src/data/download_study.py'],
-            'actions': ['python %(dependencies)s ' + '--study %s' % study],
+            'actions': ['mkdir -p %s' % path_raw_data,
+                        ('python %(dependencies)s ' + '--study %s' % study +
+                         ' &> {path}/.download.log'.format(path_raw_data)
+                         )],
             'name': 'download_%s' % study
                 }
 
@@ -147,7 +151,9 @@ def task_process_data():
                                  '--output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES)
+                                 '--cores %i' % (CORES) +
+                                 ' > {path}/xcms.log 2> {path}/xcms.error'.format(
+                                     path=processed_output_path)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
@@ -166,7 +172,9 @@ def task_process_data():
                                  ' --assay {assay}'.format(assay=assay) +
                                  ' --output {path}'.format(path=
                                       'user_input/xcms_parameters/') +
-                                 ' --cores %i' % (CORES)
+                                 ' --cores %i' % (CORES) +
+                                 ' > {path}/ipo.log 2> {path}/ipo.error'.format(
+                                     path=processed_output_path)
                                   )],
 
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
@@ -192,7 +200,9 @@ def task_process_data():
                                  ' --output "{path}" '.format(
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
-                                 ' --cores %i' % (CORES)
+                                 ' --cores %i' % (CORES) +
+                                 ' > {path}/xcms.log 2> {path}/xcms.error'.format(
+                                     path=processed_output_path)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                               assay=assay)
@@ -205,16 +215,17 @@ def task_process_data():
                        'there are errors or warnings\n'
                        )
 
-                with open('warnings.log', 'a') as f:
+                with open('{path}/warnings.log'.format(path=processed_output_path), 'a') as f:
                     f.write(msg)
 
         # Sync raw and processed data back to aws
         raw_data_path = RAW_DIR + '/' + study
+        processed_data_path = PROCESSED_DIR + '/' + study
         if S3_PATH:  # sync to s3
             # target paths
             sync_stamp = '.s3_sync_stamp'
             raw_sync_stamp = raw_data_path + '/' + sync_stamp
-            proc_sync_stamp = processed_output_path + '/' + sync_stamp
+            proc_sync_stamp = processed_data_path + '/' + sync_stamp
             # file_dep
             xcms_outputs = [os.path.join(PROCESSED_DIR, study,
                             i, 'xcms_result.tsv')  for i in assays]
@@ -222,25 +233,36 @@ def task_process_data():
                    'targets': [raw_sync_stamp, proc_sync_stamp],
                    # adding two lists of strings makes another list
                    'file_dep': xcms_outputs + ['src/data/download_study.py'],
-                   # action is a python function! :)
-                   # see python-action in pydoit documentation
-                   'actions': [(download_study.s3_sync_to_aws,
-                                   [S3_PATH, study, raw_data_path]),
-                               (download_study.s3_sync_to_aws,
-                                   [S3_PATH, study, processed_output_path]),
+                   # Sync to s3, raw data and processed data
+                   'actions': [('nohup aws s3 sync "{local}" "{s3}"'.format(
+                                   local=raw_data_path,
+                                   s3=S3_PATH + 'raw/{study}'.format(study=study)
+                                   ) +
+                                ' &> {path}/.raw_data_sync_to_aws.log'.format(
+                                    path=raw_data_path)
+                                ),
+                               ('nohup aws s3 sync "{local}" "{s3}"'.format(
+                                   local=processed_data_path,
+                                   s3=S3_PATH + 'processed/{study}'.format(
+                                   study=study)
+                                   ) +
+                                '&> {path}/.processed_data_sync_to_aws.log'.format(
+                                    path=processed_output_path)
+                                ),
                                'touch {raw} {proc}'.format(
                                    raw = (raw_data_path +
                                        '/' + '.s3_sync_stamp'),
-                                   proc = (processed_output_path +
+                                   proc = (processed_data_path +
                                            '/' + '.s3_sync_stamp')
-                                )
+                                   )
                                ],
                    'name': 'sync_to_aws_{study}'.format(study=study)
                    }
-
+        
         # clean-up raw data folder of everything except dot files
         # means need to traverse directory tree and run rm * in each subfolder
         cleaned_stamp = raw_data_path + '/' + '.cleaned_up'
+        
         yield {'targets': [cleaned_stamp],
                'file_dep': xcms_outputs,  # is a list
                'actions': [(delete_recursive, [], {'path': raw_data_path,
@@ -249,6 +271,5 @@ def task_process_data():
                            ],
                'name': 'clean_up_{study}'.format(study=study)
                }
-
 # TODO tasks to process xcms_results files
 #
