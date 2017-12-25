@@ -1,0 +1,70 @@
+MTBLS17:
+    assays:
+        exp1_pos:
+            files:
+                - "Exp1_*POS.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp1_pos"
+        exp1_neg:
+            files:
+                - "Exp1_*NEG.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp1_neg"
+        exp2_pos:
+            files:
+                - "Exp2_*POS.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp2_pos"
+        exp2_neg:
+            files:
+                - "Exp2_*NEG.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp2_neg"
+        exp3_pos:
+            files:
+                - "Exp3_*POS.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp3_pos"
+        exp3_neg:
+            files:
+                - "Exp3_*NEG.CDF"
+            chromatography:
+                "uplc"
+            column:
+                "C18"
+            mass_spectrometer:
+                "qtof_hires"
+            data_path:
+                "data/raw/MTBLS17/exp3_neg"
+
+
