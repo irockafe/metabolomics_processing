@@ -1,4 +1,5 @@
 import os
+import errno
 import yaml
 import glob
 import multiprocessing
@@ -67,6 +68,20 @@ def sync_to_s3(study, raw_data_path):
         download_study.s3_sync_to_aws(S3_PATH, study,
             raw_data_path)  #path to mtbls315)
 
+def write_warning(path, study, assay):
+    msg = ('\n%s_%s: ppm might need to ' % (study, assay) +
+           'be adjusted. I guesstimatedsed the ppm' +
+           'based on the mass-spec listed in the .yaml file ' +
+           'Make sure to check the log files to see if' +
+           'there are errors or warnings\n'
+           )
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    with open('{path}/warnings.log'.format(path=path), 'a') as f:
+        f.write(msg)
 
 # Tasks ###############################3
 
@@ -79,14 +94,14 @@ def task_process_data():
     # for loop over entries in STUDY_DICT
     for study in STUDY_DICT.keys():
         path_raw_data = RAW_DIR + '/{study}/'.format(
-                study=study)]
+                study=study)
         # Download study
         yield {
             'targets': [path_raw_data],
             'file_dep': ['src/data/download_study.py'],
             'actions': ['mkdir -p %s' % path_raw_data,
                         ('python %(dependencies)s ' + '--study %s' % study +
-                         ' &> {path}/.download.log'.format(path_raw_data)
+                         ' &> {path}/.download.log'.format(path=path_raw_data)
                          )],
             'name': 'download_%s' % study
                 }
@@ -145,7 +160,8 @@ def task_process_data():
                                     study=study)),
                                  xcms_param_file
                                   ],
-                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R ' +
+                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                                ('Rscript src/xcms_wrapper/run_xcms.R ' +
                                  '--summaryfile "%s" ' % xcms_param_file +
                                  '--data "%s" ' % raw_data_path +
                                  '--output "{path}" '.format(
@@ -167,7 +183,8 @@ def task_process_data():
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                    study=study))],
-                    'actions': [('Rscript src/xcms_wrapper/optimize_xcms_params_ipo.R' +
+                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                                ('Rscript src/xcms_wrapper/optimize_xcms_params_ipo.R' +
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
                                  ' --assay {assay}'.format(assay=assay) +
                                  ' --output {path}'.format(path=
@@ -189,12 +206,13 @@ def task_process_data():
                     'file_dep': ['src/xcms_wrapper/run_xcms.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                     study=study)),
-                                 ('/user_input/xcms_parameters/' +
+                                 ('user_input/xcms_parameters/' +
                                     'xcms_params_' +
                                     '{study}_{assay}.tsv'.format(
                                         study=study, assay=assay))
                                   ],
-                    'actions': [('Rscript src/xcms_wrapper/run_xcms.R' +
+                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                                ('Rscript src/xcms_wrapper/run_xcms.R' +
                                  ' --summaryfile "%s" ' % xcms_param_file +
                                  ' --data "%s" ' % raw_data_path +
                                  ' --output "{path}" '.format(
@@ -208,16 +226,15 @@ def task_process_data():
                                                               assay=assay)
                          }
                 # write out a warning about the ppm
-                msg = ('\n%s_%s: ppm might need to ' % (study, assay) +
-                       'be adjusted. I guesstimatedsed the ppm' +
-                       'based on the mass-spec listed in the .yaml file ' +
-                       'Make sure to check the log files to see if' +
-                       'there are errors or warnings\n'
-                       )
-
-                with open('{path}/warnings.log'.format(path=processed_output_path), 'a') as f:
-                    f.write(msg)
-
+                warning_file = os.path.join(processed_output_path,
+                                            'warnings.log')
+                yield {
+                    'targets': [warning_file],
+                    'actions': [(write_warning, [], {
+                        'path': processed_output_path, 
+                        'study': study, 'assay': assay})],
+                    'name': 'warning_file_%s_%s' % (study, assay)
+                       }
         # Sync raw and processed data back to aws
         raw_data_path = RAW_DIR + '/' + study
         processed_data_path = PROCESSED_DIR + '/' + study
