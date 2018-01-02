@@ -5,13 +5,12 @@ import glob
 import multiprocessing
 # my code
 import project_fxns.project_fxns as project_fxns
-import data.download_study as download_study
 
 # TODO!!! when Rscript fails, it doesn't crash doit. This is annoying and dumb
 #       If next tasks depend on that file, fine. it'll crash eventually, but
 #       figuring out that it's because of the shitty task that failed is annoying
 # TODO!!! S3 sync ends up updating the timestamps on everything
-#  to the most recent sync date. That's annoying. Try to 
+#  to the most recent sync date. That's annoying. Try to
 #  figure out how to make the timestamps be modified time instead
 # TODO - make sure you run a script to create user_settings.py
 # first
@@ -20,6 +19,7 @@ import data.download_study as download_study
 # and automagically update when things become out of date
 # based on timestamp, not MD5 sum
 # (b/c we have big files, MD5 sums would be a wste of time
+
 DOIT_CONFIG = {'check_file_uptodate': 'timestamp_newer',
                'verbosity': 2}
 
@@ -62,12 +62,6 @@ def delete_recursive(path, delete_hidden=False):
                     os.remove(os.path.join(root, name))
 
 
-def sync_to_s3(study, raw_data_path):
-    if S3_PATH:
-        # sync raw data
-        download_study.s3_sync_to_aws(S3_PATH, study,
-            raw_data_path)  #path to mtbls315)
-
 def write_warning(path, study, assay):
     msg = ('\n%s_%s: ppm might need to ' % (study, assay) +
            'be adjusted. I guesstimatedsed the ppm' +
@@ -99,9 +93,9 @@ def task_process_data():
         yield {
             'targets': [path_raw_data],
             'file_dep': ['src/data/download_study.py'],
-            'actions': ['mkdir -p %s' % path_raw_data,
-                        ('python %(dependencies)s ' + '--study %s' % study +
-                         ' &> {path}/.download.log'.format(path=path_raw_data)
+            'actions': ['mkdir -p "%s"' % path_raw_data,
+                        ('python "%(dependencies)s" ' + '--study %s' % study +
+                         ' &> "{path}/.download.log"'.format(path=path_raw_data)
                          )],
             'name': 'download_%s' % study
                 }
@@ -123,7 +117,7 @@ def task_process_data():
                          ('{raw_dir}/{study}/.download_stamp'.format(
                              raw_dir=RAW_DIR, study=study))
                          ],
-            'actions': ['python {py} -f "{org_file}"'.format(
+            'actions': ['python "{py}" -f "{org_file}"'.format(
                             py=org_script, org_file=yaml_file),
                         'touch "{stamp}"'.format(stamp=organize_stamp)
                         ],
@@ -160,7 +154,7 @@ def task_process_data():
                                     study=study)),
                                  xcms_param_file
                                   ],
-                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
                                 ('Rscript src/xcms_wrapper/run_xcms.R ' +
                                  '--summaryfile "%s" ' % xcms_param_file +
                                  '--data "%s" ' % raw_data_path +
@@ -168,7 +162,7 @@ def task_process_data():
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
                                  '--cores %i' % (CORES) +
-                                 ' > {path}/xcms.log 2> {path}/xcms.error'.format(
+                                 ' > "{path}/xcms.log" 2> {path}/xcms.error'.format(
                                      path=processed_output_path)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
@@ -183,14 +177,14 @@ def task_process_data():
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
                                  (RAW_DIR + '/{study}/.organize_stamp'.format(
                                    study=study))],
-                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
                                 ('Rscript src/xcms_wrapper/optimize_xcms_params_ipo.R' +
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
                                  ' --assay {assay}'.format(assay=assay) +
                                  ' --output {path}'.format(path=
                                       'user_input/xcms_parameters/') +
                                  ' --cores %i' % (CORES) +
-                                 ' > {path}/ipo.log 2> {path}/ipo.error'.format(
+                                 ' > "{path}/ipo.log" 2> {path}/ipo.error'.format(
                                      path=processed_output_path)
                                   )],
 
@@ -211,7 +205,7 @@ def task_process_data():
                                     '{study}_{assay}.tsv'.format(
                                         study=study, assay=assay))
                                   ],
-                    'actions': ['mkdir -p {path}'.format(path=processed_output_path),
+                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
                                 ('Rscript src/xcms_wrapper/run_xcms.R' +
                                  ' --summaryfile "%s" ' % xcms_param_file +
                                  ' --data "%s" ' % raw_data_path +
@@ -219,7 +213,7 @@ def task_process_data():
                                     path=processed_output_path) +
                                  # TODO how to change cores depending on user?
                                  ' --cores %i' % (CORES) +
-                                 ' > {path}/xcms.log 2> {path}/xcms.error'.format(
+                                 ' > "{path}/xcms.log" 2> "{path}/xcms.error"'.format(
                                      path=processed_output_path)
                                  )],
                     'name': 'run_xcms_{study}_{assay}'.format(study=study,
@@ -231,7 +225,7 @@ def task_process_data():
                 yield {
                     'targets': [warning_file],
                     'actions': [(write_warning, [], {
-                        'path': processed_output_path, 
+                        'path': processed_output_path,
                         'study': study, 'assay': assay})],
                     'name': 'warning_file_%s_%s' % (study, assay)
                        }
@@ -255,18 +249,18 @@ def task_process_data():
                                    local=raw_data_path,
                                    s3=S3_PATH + 'raw/{study}'.format(study=study)
                                    ) +
-                                ' &> {path}/.raw_data_sync_to_aws.log'.format(
+                                ' &> "{path}/.raw_data_sync_to_aws.log"'.format(
                                     path=raw_data_path)
                                 ),
                                ('nohup aws s3 sync "{local}" "{s3}"'.format(
                                    local=processed_data_path,
-                                   s3=S3_PATH + 'processed/{study}'.format(
+                                   s3=S3_PATH + '"processed/{study}"'.format(
                                    study=study)
                                    ) +
-                                '&> {path}/.processed_data_sync_to_aws.log'.format(
+                                '&> "{path}/.processed_data_sync_to_aws.log"'.format(
                                     path=processed_output_path)
                                 ),
-                               'touch {raw} {proc}'.format(
+                               'touch "{raw}" "{proc}"'.format(
                                    raw = (raw_data_path +
                                        '/' + '.s3_sync_stamp'),
                                    proc = (processed_data_path +
@@ -275,11 +269,11 @@ def task_process_data():
                                ],
                    'name': 'sync_to_aws_{study}'.format(study=study)
                    }
-        
+
         # clean-up raw data folder of everything except dot files
         # means need to traverse directory tree and run rm * in each subfolder
         cleaned_stamp = raw_data_path + '/' + '.cleaned_up'
-        
+
         yield {'targets': [cleaned_stamp],
                'file_dep': xcms_outputs,  # is a list
                'actions': [(delete_recursive, [], {'path': raw_data_path,
