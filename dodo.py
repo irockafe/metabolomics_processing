@@ -140,38 +140,8 @@ def task_process_data():
             processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
                 study=study, assay=assay)
 
-            # If xcms parameters already exist, run xcms
-            if xcms_param_file in all_xcms_params:
-                print 'params file', xcms_param_file
-                print 'all params files', all_xcms_params
-                yield {
-                    'targets': [(PROCESSED_DIR +
-                                '{study}/{assay}/xcms_result.tsv'.format(
-                                    study=study, assay=assay)
-                                 )],
-                    'file_dep': ['src/xcms_wrapper/run_xcms.R',
-                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
-                                    study=study)),
-                                 xcms_param_file
-                                  ],
-                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
-                                ('Rscript src/xcms_wrapper/run_xcms.R ' +
-                                 '--summaryfile "%s" ' % xcms_param_file +
-                                 '--data "%s" ' % raw_data_path +
-                                 '--output "{path}" '.format(
-                                    path=processed_output_path) +
-                                 # TODO how to change cores depending on user?
-                                 '--cores %i' % (CORES) +
-                                 ' > "{path}/xcms.log" 2> {path}/xcms.error'.format(
-                                     path=processed_output_path)
-                                 )],
-                    'name': 'run_xcms_{study}_{assay}'.format(study=study,
-                                                              assay=assay)
-                }
-
-            else:
-                # Else, run IPO to generate/optimize params
-                print 'Didnt find xcms params. Generating with IPO'
+            # If no xcms parameters exist, get them with IPO
+            if xcms_param_file not in all_xcms_params:
                 yield {
                     'targets': [xcms_param_file],
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
@@ -191,35 +161,8 @@ def task_process_data():
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
                         study=study, assay=assay)
                         }
-                # then run xcms with the new parameters
-                yield {
-                    'targets': [(PROCESSED_DIR +
-                                '{study}/{assay}/xcms_result.tsv'.format(
-                                    study=study, assay=assay)
-                                 )],
-                    'file_dep': ['src/xcms_wrapper/run_xcms.R',
-                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
-                                    study=study)),
-                                 ('user_input/xcms_parameters/' +
-                                    'xcms_params_' +
-                                    '{study}_{assay}.tsv'.format(
-                                        study=study, assay=assay))
-                                  ],
-                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
-                                ('Rscript src/xcms_wrapper/run_xcms.R' +
-                                 ' --summaryfile "%s" ' % xcms_param_file +
-                                 ' --data "%s" ' % raw_data_path +
-                                 ' --output "{path}" '.format(
-                                    path=processed_output_path) +
-                                 # TODO how to change cores depending on user?
-                                 ' --cores %i' % (CORES) +
-                                 ' > "{path}/xcms.log" 2> "{path}/xcms.error"'.format(
-                                     path=processed_output_path)
-                                 )],
-                    'name': 'run_xcms_{study}_{assay}'.format(study=study,
-                                                              assay=assay)
-                         }
-                # write out a warning about the ppm
+                
+                # write out a warning about how the ppm is guesstimated
                 warning_file = os.path.join(processed_output_path,
                                             'warnings.log')
                 yield {
@@ -229,6 +172,34 @@ def task_process_data():
                         'study': study, 'assay': assay})],
                     'name': 'warning_file_%s_%s' % (study, assay)
                        }
+            # Now that xcms parameters exist, run xcms
+            print 'params file', xcms_param_file
+            print 'all params files', all_xcms_params
+            yield {
+                'targets': [(PROCESSED_DIR +
+                            '{study}/{assay}/xcms_result.tsv'.format(
+                                study=study, assay=assay)
+                             )],
+                'file_dep': ['src/xcms_wrapper/run_xcms.R',
+                             (RAW_DIR + '/{study}/.organize_stamp'.format(
+                                study=study)),
+                             xcms_param_file
+                              ],
+                'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
+                            ('Rscript src/xcms_wrapper/run_xcms.R ' +
+                             '--summaryfile "%s" ' % xcms_param_file +
+                             '--data "%s" ' % raw_data_path +
+                             '--output "{path}" '.format(
+                                path=processed_output_path) +
+                             # TODO how to change cores depending on user?
+                             '--cores %i' % (CORES) +
+                             ' > "{path}/xcms.log" 2> {path}/xcms.error'.format(
+                                 path=processed_output_path)
+                             )],
+                'name': 'run_xcms_{study}_{assay}'.format(study=study,
+                                                          assay=assay)
+            }
+
         # Sync raw and processed data back to aws
         raw_data_path = RAW_DIR + '/' + study
         processed_data_path = PROCESSED_DIR + '/' + study
