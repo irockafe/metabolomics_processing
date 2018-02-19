@@ -211,8 +211,3 @@ if __name__ == '__main__':
     make_dirstamp = "touch '{dir}/.download_stamp'".format(
                 dir=output_dir)
     subprocess.call(make_dirstamp, shell=True)
-    
-    # sync to aws
-    if s3_path:  # Assumes that will return None if no S3 specified
-        s3_sync_to_aws(s3_path, args.study, output_dir)
-    #

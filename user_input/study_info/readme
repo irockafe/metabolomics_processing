@@ -3,9 +3,14 @@ yaml files here are used to tell various scripts where raw data is and what type
 Layout of files is as follows keys in {brackets} are variable by the user.
 Those that are not bracketed are not variable, they're keys that are used
 by scripts to find values:
+---------------------------------------------------------------------
 
 {Study_name}:  # key is variable, i.e MTBLS72, MTBLS315, etc
                # no value
+   organize: # key isn't variable
+             # values are list of strings of bash commands
+             # Example: - "unzip ST000388.zip"
+             #          - "dtrx ST000388/*.7z"
    assays:  # key isn't variable, no value
       {assay_name}:  # key is variable - will become the name of subfolder
                      # no value

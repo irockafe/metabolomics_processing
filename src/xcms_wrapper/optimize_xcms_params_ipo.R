@@ -73,8 +73,8 @@ get_initial_params <- function(mass_spec, chromatography) {
   # dictionaries to replace stuff with
   # Values from Patti et al 2012 metaXCMS paper
   instrument_params = list(
-    qtof = list(ppm=30, peakwidth=c(10,60), prefilter=c(0,0)),
-    qtof_hires = list(ppm=15, peakwidth=c(10,60), prefilter=c(0,0)),
+    qtof = list(ppm=30, peakwidth=c(10,60), prefilter=c(0,0.1)),
+    qtof_hires = list(ppm=15, peakwidth=c(10,60), prefilter=c(0,0.1)),
     orbitrap = list(ppm=2.5, peakwidth=c(5,20), prefilter=c(3,5000))
     )
   chromatograph_params = list(

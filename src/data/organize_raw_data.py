@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-import yaml
+import yaml as yaml_pkg
 import argparse
 # import subprocess
 # my code
@@ -18,7 +18,7 @@ parser.add_argument('-f', '--yaml',
 args = parser.parse_args()
 yaml_path = args.yaml
 
-yaml = yaml.load(file(yaml_path, 'r'))
+yaml = yaml_pkg.load(file(yaml_path, 'r'))
 study = yaml.keys()[0]
 local_path = project_fxns.get_local_path()
 raw_data_path = local_path + 'data/raw/{study}'.format(study=study)
@@ -38,8 +38,18 @@ for assay in yaml[study]['assays'].keys():
                    ' Continuing...\n')
         else:
             print "OS error: {err}".format(err=e)
+    
+    # Organize commands (unzip, etc) and do them
+    # in the current directory (raw data directory)
+    org_cmds = yaml[study]['organize']
+    for cmd in org_cmds:
+        print ('Organize command ', cmd)
+        # TODO, this is probably bad security, ppl could insert whatever 
+        # commands they wanted here
+        subprocess.call(cmd, shell=True)
+    # TODO: How to deal with raw files? 
 
-    # get move commands and run them
+    # Move files from different studies into appropriate folder
     mv_cmds = yaml[study]['assays'][assay]['files']
     print ('commands', mv_cmds)
     for cmd in mv_cmds:
