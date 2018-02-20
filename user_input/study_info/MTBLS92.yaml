@@ -1,0 +1,23 @@
+MTBLS92:
+    assays:
+        c18_pos:
+            files:
+                - "*.CDF"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            instrument_name:
+                "Waters Q-Tof Premier"
+            data_path:
+                "TODO"
+            column:
+                "C18"
+            ion_mode:
+                "positive"
+            ion_source:
+                "ESI"
+            fluid:
+                "serum"
+    disease:
+        "Effect of breast cancer therapy (neoadjuvant)"
