@@ -50,7 +50,7 @@ for assay in yaml[study]['assays'].keys():
             # commands they wanted here
             subprocess.call(cmd, shell=True)
     except KeyError as e:
-       raise e 
+       print "Didn't find 'organize' key. Assuming no unzipping needs to be done" 
     # TODO: How to deal with raw files? 
 
     # Move files from different studies into appropriate folder
