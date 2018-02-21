@@ -23,7 +23,7 @@ by scripts to find values:
                           # Used to set initial parameters for xcms
          mass_spectrometer:  # Options are [qtof, qtof_hires, orbitrap]
                              # Used to set initial parameters for xcms
-         instrument: # (Optional) more specific than mass_spectrometer
+         instrument: # (Optional) Give the name of the mass_spectrometer
          column:  # Not yet used by downstream scripts. Be generic,
                   # C8, C18, HILIC, not C8 2.1mm x 0.1mm. Goal is to
                   # be able to filter studies by the column used

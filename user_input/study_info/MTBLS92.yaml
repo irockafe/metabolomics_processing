@@ -10,7 +10,7 @@ MTBLS92:
             instrument_name:
                 "Waters Q-Tof Premier"
             data_path:
-                "TODO"
+                "data/raw/MTBLS92/c18_pos"
             column:
                 "C18"
             ion_mode:

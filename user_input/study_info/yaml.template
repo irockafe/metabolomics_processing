@@ -1,0 +1,14 @@
+{study}:
+    organize: {unzip commands, etc}
+    assays:
+        {assay_name}:
+            files:
+                - {mv_commands}
+            chromatography:
+                {uplc, hplc}
+            column:
+                {C8, C18, HILIC}
+            mass_spectrometer:
+                {qtof, qtof_hires, orbitrap}
+            data_path:
+                "data/raw/{study}/{assay}"
