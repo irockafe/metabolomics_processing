@@ -41,12 +41,16 @@ for assay in yaml[study]['assays'].keys():
     
     # Organize commands (unzip, etc) and do them
     # in the current directory (raw data directory)
-    org_cmds = yaml[study]['organize']
-    for cmd in org_cmds:
-        print ('Organize command ', cmd)
-        # TODO, this is probably bad security, ppl could insert whatever 
-        # commands they wanted here
-        subprocess.call(cmd, shell=True)
+    try:
+        org_cmds = yaml[study]['organize']
+    
+        for cmd in org_cmds:
+            print ('Organize command ', cmd)
+            # TODO, this is bad security, ppl could insert whatever 
+            # commands they wanted here
+            subprocess.call(cmd, shell=True)
+    except KeyError as e:
+       raise e 
     # TODO: How to deal with raw files? 
 
     # Move files from different studies into appropriate folder
