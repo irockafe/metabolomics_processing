@@ -9,6 +9,10 @@ MTBLS315:
                 "C18"
             mass_spectrometer:
                 "orbitrap"
+            ion_mode:
+                "positive"
+            ion_source:
+                "ESI"
             data_path:
                 "data/raw/MTBLS315/uhplc_pos/"
         uhplc_neg:
@@ -20,6 +24,10 @@ MTBLS315:
                 "C18"
             mass_spectrometer:
                 "orbitrap"
+            ion_mode:
+                "negative"
+            ion_source:
+                "ESI"
             data_path:
                 "data/raw/MTBLS315/uhplc_neg/"
     disease:

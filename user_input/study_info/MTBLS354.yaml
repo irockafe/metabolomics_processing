@@ -1,0 +1,42 @@
+MTBLS354:
+    assays:
+        c18_pos:
+            files:
+                - "*pos*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            instrument_name:
+                "Agilent 6540 Q-TOF"
+            data_path:
+                "data/raw/MTBLS354/c18_pos"
+            column:
+                "C18"
+            ion_mode:
+                "positive"
+            ion_source:
+                "ESI"
+            fluid:
+                "plasma"
+        c18_neg:
+            files:
+                - "*neg*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            instrument_name:
+                "Agilent 6540 Q-TOF"
+            data_path:
+                "data/raw/MTBLS354/c18_neg"
+            column:
+                "C18"
+            ion_mode:
+                "negative"
+            ion_source:
+                "ESI"
+            fluid:
+                "plasma"
+    disease:
+        "COPD"
