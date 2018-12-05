@@ -1,11 +1,15 @@
 import os
+import sys
 import shutil
 import glob
 import yaml as yaml_pkg
 import argparse
 # import subprocess
 # my code
-import project_fxns.project_fxns as project_fxns
+src_path = '/home/'
+sys.path.append(src_path)
+print(sys.path)
+import src.project_fxns.project_fxns as project_fxns
 
 
 parser = argparse.ArgumentParser()

@@ -4,7 +4,11 @@ import yaml
 import glob
 import multiprocessing
 # my code
-import project_fxns.project_fxns as project_fxns
+import sys
+src_path = '/home/'
+if src_path not in sys.path:
+    sys.path.append(src_path)
+import src.project_fxns.project_fxns as project_fxns
 
 # TODO!!! when Rscript fails, it doesn't crash doit. This is annoying and dumb
 #       If next tasks depend on that file, fine. it'll crash eventually, but

@@ -4,7 +4,10 @@ import argparse
 import pipes
 import urllib2
 # My code
-import project_fxns.project_fxns as project_fxns
+import sys
+src_path = '/home/'
+sys.path.append(src_path)
+import src.project_fxns.project_fxns as project_fxns
 
 # TODO: add an ftp flag so that users can specify non-MTBLS/MWB projects
 # Use this script to download files from Metabolights IDs or
