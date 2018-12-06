@@ -1,0 +1,13 @@
+# makes every file in current directory accessible in docker environment
+
+version: '3'
+
+services:
+        project:
+                build: .
+                # could put context: https://github.com/path/to/github/repo
+                # image: school_seg:1 # will pull from dockerhub unless build is also specified
+                volumes:
+                        - ./:/home/
+                ports:
+                  - "8888:8888"
