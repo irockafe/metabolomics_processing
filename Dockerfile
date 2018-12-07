@@ -23,8 +23,10 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.4-Linux-x86_
 # Then get packages needed for installation i.e. conda install things
 # or npm install things
 COPY environment.yml ./
+# copy your bashrc into docker
 RUN conda env create -f ./environment.yml
 SHELL ["/bin/bash", "-c"]
+COPY .bashrc /root/
 # Running "jupyter-notebook" will startup a session you can access with the right ssh-tunneling
 RUN echo "alias jupyter-notebook='jupyter-notebook --no-browser --ip=0.0.0.0 --allow-root'" >> ~/.bashrc 
 RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc 
@@ -33,8 +35,7 @@ ENV PYTHONPATH=$PYTHONPATH:/home/
 # and update the environment everytime you login
 # RUN echo 'conda env update -f ./environment.yml' >> ~/.bashrc
 RUN awk '/name:/ {print $2}' ./environment.yml | xargs echo 'source activate' >> ~/.bashrc
-# Update the conda env so we don't have to re-build the container every time 
-# we need a new pacakge
-#CMD conda env update -f ./environment.yml
+# Get vim
+RUN apt-get update && apt-get install -y vim 
 CMD source activate $(awk '/name:/ {print $2}' ./environment.yml) && doit &> doit.log
 #ENV PATH /opt/conda/envs/seg_map/bin/:$PATH
