@@ -1,29 +1,28 @@
 import os
-import pandas as pd
+import yaml
 # Goal of this is to define the user-specific things
 # Specifically:
-# The local path, s3_bucket
+# The cloud_provider, bucket_path
 
-# This will run in the makefile the first time it is run, on local machine
-# it'll output a dotfile that tells us it has run.
-
-
-# Get local path
-local = '/'.join(os.getcwd().split('/')) + '/'
-
-# Ask for an S3 path
-s3 = raw_input('Do you have an S3 bucket? (y/n)' + ' '*10)
-if s3 not in ['y', 'n']:
-    raise ValueError('You should have typed y or n')
-if s3 == 'y':
-    s3_path = raw_input('Whats your s3 path? (include the s3://)' + ' '*10)
+# Ask about cloud provider
+cloud = raw_input('\nAre you working in a cloud? (y/n)')
+if cloud == 'y':
+    provider = raw_input('\nAmazon or google? (type amazon or google)')
+    if provider.lower() not in ['amazon', 'google']:
+        raise ValueError('you should have typed amazon or google')
+    bucket = raw_input('\nWhat is the path to your storage bucket?')
+elif cloud == 'n':
+    provider = 'none'
+    bucket='none'
+    print('\n\n' + '''NOTE This code was only tested using cloud buckets.
+    I haven't tested this at all. You'll have to add a Volume to the
+    docker-compose.yml and possibly debug some stuff\n
+    If you're not okay with that, re-run src/get_user_info.py or
+    edit user_input/user_settings.yml''')
 else:
-    s3_path = None
+    raise ValueError('should have typed y or n')
 
-# Create table
-df = pd.DataFrame([local, s3_path], index=['local_path', 's3_path'])
-df.to_csv(os.getcwd() + '/user_settings.tab', sep='\t', header=False)
+output = {'cloud_provider': provider, 'storage': bucket}
+yaml.dump(output, file('/home/user_input/user_settings.yml', 'w'),
+        default_flow_style=False)
 
-# Write out a dotfile that tells us this script has been run before
-with open(os.getcwd() + '/.set_user_settings', 'w') as f:
-    f.write('I already ran get_user_info.py it created user_settings.tab')
