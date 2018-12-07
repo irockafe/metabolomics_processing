@@ -27,32 +27,6 @@ metabolights_ftp = ('ftp://ftp.ebi.ac.uk/pub/databases/' +
                     'metabolights/studies/public/')
 metabolomics_workbench_ftp = ('ftp://www.metabolomicsworkbench.org/Studies/')
 
-"""
-def walk_up(target):
-    # Walk up directory until find target file/directory
-    pwd = os.getcwd()
-    lst = os.listdir(pwd)
-    if target in lst:
-        out = pwd + '/' + target
-        return out
-    else:
-        os.chdir('..')
-        out = walk_up(target)
-    return out
-"""
-"""
-def get_user_settings():
-    '''
-    GOAL - walk up directories until you find user_settings.tab,
-        file containing user defined stuff
-    '''
-    user_settings_path = walk_up('user_settings.tab')
-    pd.set_option("display.max_colwidth", 10000)
-    user_settings = pd.read_csv(user_settings_path, sep='\t',
-                                header=None, index_col=0,
-                                dtype=str)
-    return user_settings
-"""
 
 
 def s3_bucket_exists(s3_path, study):
@@ -68,13 +42,6 @@ def s3_bucket_exists(s3_path, study):
         return True
     else:
         return False
-
-"""
-def get_s3_path(study):
-    user_settings = get_user_settings()
-    s3_path = user_settings.loc['s3_path'].to_string(index=False, header=False)
-    return s3_path
-"""
 
 
 def s3_sync_to_aws(s3_path, study, output_dir):
