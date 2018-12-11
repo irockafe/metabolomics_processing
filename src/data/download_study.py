@@ -3,65 +3,12 @@ import os
 import argparse
 import pipes
 import urllib2
+import logging
 # My code
 import sys
 src_path = '/home/'
 sys.path.append(src_path)
 import src.project_fxns.project_fxns as project_fxns
-
-# TODO: add an ftp flag so that users can specify non-MTBLS/MWB projects
-# Use this script to download files from Metabolights IDs or
-# Metabolomics workbench Study IDs.
-# Usage - python scriptname.py --study MTBLSxxxx
-parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--study',
-                    help='Required. Name of the study, i.e. MTBLS315, '
-                    'or ST000392')
-parser.add_argument('-o', '--output',
-                    help='Optional. Base directory Where you want to download'
-                    'files to.'
-                    '(default is current directory). Will make a new directory')
-args = parser.parse_args()
-
-metabolights_ftp = ('ftp://ftp.ebi.ac.uk/pub/databases/' +
-                    'metabolights/studies/public/')
-metabolomics_workbench_ftp = ('ftp://www.metabolomicsworkbench.org/Studies/')
-
-
-
-def s3_bucket_exists(s3_path, study):
-    # Test if bucket exists on S3 based on s3_path string and
-    # study string and sync if it does
-
-    # check if bucket exists
-    ls_s3 = 'aws s3 ls {s3_path}raw/{study}'.format(s3_path=s3_path,
-                                                    study=study)
-    print 'ls_s3 ', ls_s3
-    check_bucket = subprocess.call(ls_s3, shell=True)
-    if check_bucket == 0:
-        return True
-    else:
-        return False
-
-
-def s3_sync_to_aws(s3_path, study, output_dir):
-    sync = ("nohup aws s3 sync '{path}' '{s3}raw/{study}' ".format(
-            s3=s3_path, study=study, path=output_dir)
-            )
-    print ('\n\nUploading data to S3 here \n{s3}'.format(s3=sync))
-    subprocess.call(sync, shell=True)
-
-
-def s3_sync_to_local(s3_path, study, output_dir):
-    sync = ("nohup aws s3 sync '{s3}raw/{study}' ".format(
-            s3=s3_path, study=study) +
-            "'{dir}'".format(dir=output_dir)
-            )
-    print ('\n\nDownloading from S3 - if you want to re-download dataset' +
-           ' please delete the S3 bucket (future humans, please ' +
-           'make this better)\n\n')
-    subprocess.call(sync, shell=True)
-
 
 def get_mtbls_ftp(study, mtbls_base):
     # Goal is ftp://path/to/stuff/*
@@ -121,24 +68,18 @@ def get_ftp(study, ftp_mtbls, ftp_mwb):
                         )
 
 
-def make_dir(study):
+def make_dir(abs_path):
     ''' Make a directory in the data/raw/ folder.
     also, create a file, .dirstamp, so that your makefile has
     something to look for.
     '''
-    user_settings = project_fxns.get_user_settings()
-    local_path = user_settings.loc['local_path'].to_string(index=False,
-                                                           header=False)
-    directory = '{local}/data/raw/{study}'.format(local=local_path,
-                                                  study=study)
     try:
-        os.mkdir(directory)
+        os.mkdir(abs_path)
     except OSError:
-        print('\n' + '-' * 20 + '\n' + 'raw_data directory already exists ' +
+        logger.info('\n' + '-' * 20 + '\n' + 'raw_data directory already exists ' +
               'I think that means you downloaded ' +
               'these files previously. Going to try to download from S3\n' +
               '-'*20)
-    return directory
 
 
 def download_ftp(ftp_path, output_dir):
@@ -153,7 +94,7 @@ def download_ftp(ftp_path, output_dir):
     # Note that we also have a /*, so we exclude the last / when counting
     # directory structures to ignore
     url_dirs_to_cut = len(ftp_path.split('/')[3:-1])
-    print url_dirs_to_cut
+    logger.debug(url_dirs_to_cut)
     wget_command = (
         'nohup wget -r -nH --cut-dirs={cut} '.format(cut=url_dirs_to_cut) +
         '{ftp} -P {dir} --no-verbose &'.format(ftp=ftp_path,
@@ -162,13 +103,45 @@ def download_ftp(ftp_path, output_dir):
                     )
     subprocess.call(wget_command, shell=True)
 
+# TODO: add an ftp flag so that users can specify non-MTBLS/MWB projects
+# Use this script to download files from Metabolights IDs or
+# Metabolomics workbench Study IDs.
+# Usage - python scriptname.py --study MTBLSxxxx
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--study',
+                    help='Required. Name of the study, i.e. MTBLS315, '
+                    'or ST000392')
+parser.add_argument('-o', '--output',
+                    help='Optional. Base directory Where you want to download'
+                    'files to.'
+                    '(default is current directory). Will make a new directory')
+args = parser.parse_args()
+
+metabolights_ftp = ('ftp://ftp.ebi.ac.uk/pub/databases/' +
+                    'metabolights/studies/public/')
+metabolomics_workbench_ftp = ('ftp://www.metabolomicsworkbench.org/Studies/')
+
+
+
 if __name__ == '__main__':
-    output_dir = make_dir(args.study)
+    # Logging
+    try:
+        os.mkdir('/home/logs/')
+    except OSError:
+        # if directory already exists
+        pass
+    logger = logging.getLogger('download_study')
+    logger.setLevel(logging.DEBUG)
+    fhandler = logging.FileHandler('/home/logs/%s.log' % args.study)
+    logger.addHandler(fhandler)
+    output_dir = '/home/data/raw/{study}'.format(
+            study=args.study)
+    make_dir(output_dir)
     # Check if there is an s3 bucket and sync from there if exists
-    s3_path = project_fxns.get_s3_path(args.study)
-    s3_exists = s3_bucket_exists(s3_path, args.study)
-    if s3_exists:  # sync from s3 and exit script
-        s3_sync_to_local(s3_path, args.study, output_dir)
+    storage_obj = project_fxns.Storage()
+    bucket_exists = storage_obj.bucket_exists(output_dir)
+    if bucket_exists:  # sync from s3 and exit script
+        storage_obj.sync_to_local(s3_path, args.study, output_dir)
         # exit()
     
     # If didn't find s3 bucket, get ftp link and download from database
@@ -176,8 +149,3 @@ if __name__ == '__main__':
         ftp_path = get_ftp(args.study, metabolights_ftp, metabolomics_workbench_ftp)
         download_ftp(ftp_path, output_dir)
     
-    # If script is successful, make a file-stamp telling me
-    # that download was successful
-    make_dirstamp = "touch '{dir}/.download_stamp'".format(
-                dir=output_dir)
-    subprocess.call(make_dirstamp, shell=True)

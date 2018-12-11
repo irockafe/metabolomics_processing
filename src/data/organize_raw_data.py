@@ -24,7 +24,7 @@ yaml_path = args.yaml
 
 yaml = yaml_pkg.load(file(yaml_path, 'r'))
 study = yaml.keys()[0]
-local_path = project_fxns.get_local_path()
+local_path = '/home/' 
 raw_data_path = local_path + 'data/raw/{study}'.format(study=study)
 # move into the raw data directory
 os.chdir(raw_data_path)
