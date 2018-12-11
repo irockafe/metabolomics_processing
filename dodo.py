@@ -3,16 +3,14 @@ import errno
 import yaml
 import glob
 import multiprocessing
+import logging
 # my code
-import sys
-src_path = '/home/'
-if src_path not in sys.path:
-    sys.path.append(src_path)
 import src.project_fxns.project_fxns as project_fxns
 
 # TODO!!! when Rscript fails, it doesn't crash doit. This is annoying and dumb
 #       If next tasks depend on that file, fine. it'll crash eventually, but
 #       figuring out that it's because of the shitty task that failed is annoying
+#       Maybe a task dependency is in order?
 # TODO!!! S3 sync ends up updating the timestamps on everything
 #  to the most recent sync date. That's annoying. Try to
 #  figure out how to make the timestamps be modified time instead
@@ -28,16 +26,12 @@ DOIT_CONFIG = {'check_file_uptodate': 'timestamp_newer',
                'verbosity': 2}
 
 # Globals ########
-LOCAL_PATH = os.getcwd()
+LOCAL_PATH = os.getcwd()  # In container, this is /home/
 RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
 CORES = multiprocessing.cpu_count()
-# only one line in s3 path
-# TODO make sure this works if they don't provide a path
-with open(LOCAL_PATH + '/user_input/s3_path.txt') as f:
-    S3_PATH = f.readlines()[0].strip()
-print S3_PATH
-# get studies - redundant for getting oranize files
+USER_INFO = project_fxns.Storage()
+STORAGE_PATH = USER_INFO.storage_path
 organize_dir = LOCAL_PATH + '/user_input/study_info/'
 file_organizers = glob.glob(organize_dir + '*.yaml')
 # get a dictionary of {study: [assay1, assay2]}
@@ -49,7 +43,7 @@ for f in file_organizers:
     # i.e. MTBLS315
     study_name = my_yaml.keys()[0]
     STUDY_DICT[study_name] = my_yaml[study_name]['assays'].keys()
-print('Study Dicitonary\n', STUDY_DICT)
+
 
 # Useful Functions ################
 # TODO move these into their own folder, maybe? less cluttered?
@@ -61,6 +55,7 @@ def delete_recursive(path, delete_hidden=False):
         for name in files:
             if delete_hidden:
                 os.remove(os.path.join(root, name))
+            # ignore dotfiles
             if not delete_hidden:
                 if name[0] != '.':
                     os.remove(os.path.join(root, name))
@@ -81,82 +76,105 @@ def write_warning(path, study, assay):
     with open('{path}/warnings.log'.format(path=path), 'a') as f:
         f.write(msg)
 
-# Tasks ###############################3
+# Tasks ###############################
+def task_clean_up():
+    # Will delete files, while leaving empty directories behind.
+    for study in STUDY_DICT.keys():
+        assays = STUDY_DICT[study]
+        xcms_outputs = [os.path.join(PROCESSED_DIR, study,
+                                assay, 'xcms_result.tsv')  
+                        for assay in assays]
+        delete_processed = ['rm -r /home/data/processed/{study}/{assay}/*'.format(
+            study=study, assay=assay) for assay in assays]
 
-def task_process_data():
-    '''Download, organize, xcms process raw data, then clean it up
-        Requires presence of a yaml file
-        See user_input/*.yaml for example yaml file
-        TODO: Concretize the yaml format
-    '''
-    # for loop over entries in STUDY_DICT
+        yield {'targets': [],
+               'file_dep': xcms_outputs,  # is a list - proves that ran xcms properly
+               # Only delete data if synced to cloud
+               'task_dep':['sync_to_cloud:%s' % study],
+               # delete the contents of data/raw/{stud}
+               # and data/processed/study/{assay}/*
+               'actions':['rm -r data/raw/%s/*' % study] + delete_processed,
+               'name': '%s' % study,
+               }
+
+
+def task_sync_to_cloud():
+    # for loop over en tries in STUDY_DICT
     for study in STUDY_DICT.keys():
         path_raw_data = RAW_DIR + '/{study}/'.format(
                 study=study)
-        # Download study
-        yield {
-            'targets': [path_raw_data],
-            'file_dep': ['src/data/download_study.py'],
-            'actions': ['mkdir -p "%s"' % path_raw_data,
-                        ('python "%(dependencies)s" ' + '--study %s' % study +
-                         ' &> "{path}/.download.log"'.format(path=path_raw_data)
-                         )],
-            'name': 'download_%s' % study
-                }
+        assays = STUDY_DICT[study]
+        xcms_param_path = '/home/user_input/xcms_parameters/'
+        assays = STUDY_DICT[study]
+        xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
+        # go through assays (uplc_pos, uplc_neg, etc)
+        # Sync raw and processed data back to aws
+        raw_data_path = RAW_DIR + '/' + study
+        processed_data_path = PROCESSED_DIR + '/' + study
+        # Only sync if sync if in a supported cloud
+        if USER_INFO.cloud_provider in ['amazon', 'google']:  
+            # the xcms output files
+            xcms_outputs = [os.path.join(PROCESSED_DIR, study,
+                                assay, 'xcms_result.tsv')  for assay in assays]
+            storage_fxns = project_fxns.Storage()
+            yield {# Should I have targets for this?
+                   'targets': [],
+                   # adding two lists of strings makes another list
+                   # Should all project_fxns to this, but
+                   # don't want to rerun everything until finalized
+                   'file_dep': xcms_outputs + ['src/data/download_study.py'],
+                   'task_dep': ['xcms:run_xcms_{study}_{assay}'.format(study=study,
+                                                          assay=assay)],
+                   # Sync to cloud storage - raw data and processed data
+                   'actions': [
+                       (storage_fxns.sync_to_storage, [raw_data_path]),
+                       (storage_fxns.sync_to_storage, [processed_data_path])
+                       ],
+                   'name': '%s' % study
+                   }
+        else:   # If no cloud storage bucket, don't try to sync to it.
+            pass
 
-        # Organize the raw data
-        org_script = 'src/data/organize_raw_data.py'
-        yaml_file = ('{local_dir}/user_input/study_info/'.format(
-                            local_dir=LOCAL_PATH) +
-                         '{study}.yaml'.format(
+
+def task_xcms():
+    # loop over studies in STUDY_DICT
+    for study in STUDY_DICT.keys():
+        path_raw_data = RAW_DIR + '/{study}/'.format(
+                study=study)
+        yaml_file = '/home/user_input/study_info/{study}.yaml'.format(
                              study=study)
-                         )
-        organize_stamp = RAW_DIR + '/{study}/.organize_stamp'.format(
-                            study=study)
-        yield {
-            'targets': [organize_stamp],
-            'file_dep': [org_script,
-                         yaml_file,
-                         # Need to have downloaded raw data
-                         ('{raw_dir}/{study}/.download_stamp'.format(
-                             raw_dir=RAW_DIR, study=study))
-                         ],
-            'actions': ['python "{py}" -f "{org_file}"'.format(
-                            py=org_script, org_file=yaml_file),
-                        'touch "{stamp}"'.format(stamp=organize_stamp)
-                        ],
-            'name': 'organize_{study}'.format(study=study)
-                }
-
         # Run xcms to process the raw data
         assays = STUDY_DICT[study]
         xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
-        print xcms_param_path
+        print(xcms_param_path)
         all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
         print('XCMS params files\n', all_xcms_params)
+        # Optimize parameters for each assay, unless a
+        # parameters file already exists, then run 
+        # xcms with those parameters
         for assay in assays:
-            # If xcms parameters exist, just run xcms with those parameters
             xcms_param_file = (xcms_param_path +
                                'xcms_params_{study}_{assay}.tsv'.format(
                                   study=study, assay=assay))
             raw_data_path = RAW_DIR + '/%s/%s/' % (study, assay)
-            print 'raw data path', raw_data_path
             processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
                 study=study, assay=assay)
-
             # If no xcms parameters exist, get them with IPO
             if xcms_param_file not in all_xcms_params:
                 yield {
                     'targets': [xcms_param_file],
                     'file_dep': ['src/xcms_wrapper/optimize_xcms_params_ipo.R',
-                                 (RAW_DIR + '/{study}/.organize_stamp'.format(
-                                   study=study))],
-                    'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
+                        yaml_file],
+                    'task_dep': ['organize_data:%s' % study],
+                    'actions': ['mkdir -p "{path}"'.format(
+                                    path=processed_output_path),
                                 ('Rscript src/xcms_wrapper/optimize_xcms_params_ipo.R' +
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
                                  ' --assay {assay}'.format(assay=assay) +
-                                 ' --output {path}'.format(path=
-                                      'user_input/xcms_parameters/') +
+                                 ' --output {path}'.format(
+                                     path='/home/user_input/xcms_parameters/') +
                                  ' --cores %i' % (CORES) +
                                  ' > "{path}/ipo.log" 2> {path}/ipo.error'.format(
                                      path=processed_output_path)
@@ -164,18 +182,7 @@ def task_process_data():
 
                     'name': 'optimize_params_ipo_{study}_{assay}'.format(
                         study=study, assay=assay)
-                        }
-                
-                # write out a warning about how the ppm is guesstimated
-                warning_file = os.path.join(processed_output_path,
-                                            'warnings.log')
-                yield {
-                    'targets': [warning_file],
-                    'actions': [(write_warning, [], {
-                        'path': processed_output_path,
-                        'study': study, 'assay': assay})],
-                    'name': 'warning_file_%s_%s' % (study, assay)
-                       }
+                    }
             # Now that xcms parameters exist, run xcms
             print 'params file', xcms_param_file
             print 'all params files', all_xcms_params
@@ -185,77 +192,98 @@ def task_process_data():
                                 study=study, assay=assay)
                              )],
                 'file_dep': ['src/xcms_wrapper/run_xcms.R',
-                             (RAW_DIR + '/{study}/.organize_stamp'.format(
-                                study=study)),
                              xcms_param_file
                               ],
+                # Don't depend on optimize params task, 
+                # b/c you might import params from elsewhere, 
+                # without needing to run IPO
+                'task_dep': ['organize_data:%s' % study], 
                 'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
                             ('Rscript src/xcms_wrapper/run_xcms.R ' +
-                             '--summaryfile "%s" ' % xcms_param_file +
-                             '--data "%s" ' % raw_data_path +
-                             '--output "{path}" '.format(
+                             ' --summaryfile "%s" ' % xcms_param_file +
+                             ' --data "%s" ' % raw_data_path +
+                             ' --output "{path}" '.format(
                                 path=processed_output_path) +
-                             # TODO how to change cores depending on user?
-                             '--cores %i' % (CORES) +
+                             ' --cores %i' % (CORES) +
                              ' > "{path}/xcms.log" 2> {path}/xcms.error'.format(
                                  path=processed_output_path)
                              )],
                 'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                           assay=assay)
             }
+           
 
-        # Sync raw and processed data back to aws
-        raw_data_path = RAW_DIR + '/' + study
-        processed_data_path = PROCESSED_DIR + '/' + study
-        if S3_PATH:  # sync to s3
-            # target paths
-            sync_stamp = '.s3_sync_stamp'
-            raw_sync_stamp = raw_data_path + '/' + sync_stamp
-            proc_sync_stamp = processed_data_path + '/' + sync_stamp
-            # file_dep
-            xcms_outputs = [os.path.join(PROCESSED_DIR, study,
-                            i, 'xcms_result.tsv')  for i in assays]
-            yield {# targets are dotfiles that claim we succeeded at this task
-                   'targets': [raw_sync_stamp, proc_sync_stamp],
-                   # adding two lists of strings makes another list
-                   'file_dep': xcms_outputs + ['src/data/download_study.py'],
-                   # Sync to s3, raw data and processed data
-                   'actions': [('nohup aws s3 sync "{local}" "{s3}"'.format(
-                                   local=raw_data_path,
-                                   s3=S3_PATH + 'raw/{study}'.format(study=study)
-                                   ) +
-                                ' &> "{path}/.raw_data_sync_to_aws.log"'.format(
-                                    path=raw_data_path)
-                                ),
-                               ('nohup aws s3 sync "{local}" "{s3}"'.format(
-                                   local=processed_data_path,
-                                   s3=S3_PATH + '"processed/{study}"'.format(
-                                   study=study)
-                                   ) +
-                                '&> "{path}/.processed_data_sync_to_aws.log"'.format(
-                                    path=processed_output_path)
-                                ),
-                               'touch "{raw}" "{proc}"'.format(
-                                   raw = (raw_data_path +
-                                       '/' + '.s3_sync_stamp'),
-                                   proc = (processed_data_path +
-                                           '/' + '.s3_sync_stamp')
-                                   )
-                               ],
-                   'name': 'sync_to_aws_{study}'.format(study=study)
-                   }
 
-        # clean-up raw data folder of everything except dot files
-        # means need to traverse directory tree and run rm * in each subfolder
-        cleaned_stamp = raw_data_path + '/' + '.cleaned_up'
 
-        yield {'targets': [cleaned_stamp],
-               'file_dep': xcms_outputs,  # is a list
-               'actions': [(delete_recursive, [], {'path': raw_data_path,
-                               'delete_hidden': False}),
-                           'touch {clean_up}'.format(clean_up=cleaned_stamp)
-                           ],
-               'name': 'clean_up_{study}'.format(study=study)
-               }
+def task_organize_data():
+    for study in STUDY_DICT.keys():
+        path_raw_data = RAW_DIR + '/{study}/'.format(
+                study=study)
+        
+        # Organize the raw data
+        org_script = 'src/data/organize_raw_data.py'
+        yaml_file = ('/home/user_input/study_info/{study}.yaml'.format(
+                             study=study)
+                         )
+        yield {
+            # TODO how to target the moved files..?
+            'targets': [],
+            # TODO should this depend on having the downloaded files?
+            # Otherwise, i can delete the downloaded things, and
+            # pydoit won't know that it happened
+            'file_dep': [org_script, yaml_file,
+                         ],
+            # Need to have downloaded raw data
+            'task_dep': ['download_data:%s' % study],
+            'actions': ['python "{py}" -f "{org_file}"'.format(
+                            py=org_script, org_file=yaml_file)
+                        ],
+            'name': '%s' % study
+                }
+
+
+def task_download_data():
+# for loop over entries in STUDY_DICT
+    for study in STUDY_DICT.keys():
+        path_raw_data = RAW_DIR + '/{study}/'.format(
+                study=study)
+        # Download study
+        yield {
+                #TODO How to target the (unknown) downloaded files?
+            'targets': [path_raw_data],
+            'file_dep': ['src/data/download_study.py'],
+            # No task_deps, should be first thing
+            'task_dep':[],
+            'actions': ['mkdir -p "%s"' % path_raw_data,
+                        ('python "%(dependencies)s" ' + '--study %s' % study 
+                         )],
+            'name': '%s' % study
+                }
+
+
+
+
+'''
+def task_process_data():
+    # for loop over entries in STUDY_DICT
+    for study in STUDY_DICT.keys():
+        path_raw_data = RAW_DIR + '/{study}/'.format(
+                study=study)
+        assays = STUDY_DICT[study]
+        xcms_param_path = '/home/user_input/xcms_parameters/'
+        print xcms_param_path
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
+        print('XCMS params files\n', all_xcms_params)
+        # go through assays (uplc_pos, uplc_neg, etc)
+        for assay in assays:
+            xcms_param_file = (xcms_param_path +
+                               'xcms_params_{study}_{assay}.tsv'.format(
+                                  study=study, assay=assay))
+            raw_data_path = RAW_DIR + '/%s/%s/' % (study, assay)
+            print 'raw data path', raw_data_path
+            processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
+                study=study, assay=assay)
+'''
+
 # TODO tasks to process xcms_results files
 #
