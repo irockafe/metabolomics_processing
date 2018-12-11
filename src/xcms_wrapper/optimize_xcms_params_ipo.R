@@ -26,7 +26,7 @@ args = parse_args(parser)
 
 
 
-parse_yaml <- function(yaml_path) {
+parse_yaml <- function(yaml_path, n_cores) {
 # Parse the yaml file, return the 
 # data location, and xcms parameters (peak-pick and group)
 # based on the chromatography-type and mass-spectrometer used
@@ -45,7 +45,7 @@ parse_yaml <- function(yaml_path) {
                      [['assays']] [[assay]] [['mass_spectrometer']])
         data_path = (yaml_info[[study]] [['assays']] [[assay]] [['data_path']])
         # Generate the params, taking in account mass_spec type and chromatography type
-        all_params = get_initial_params(mass_spec, chromatography)
+        all_params = get_initial_params(mass_spec, chromatography, n_cores)
         peak_pick_params = all_params[['peak_pick_params']]
         retcor_params = all_params[['retcor_params']]
         # add to aggregator
@@ -59,8 +59,10 @@ parse_yaml <- function(yaml_path) {
 }
 
 
-get_initial_params <- function(mass_spec, chromatography) {
-    # get default xcms params and modify them based on 
+get_initial_params <- function(mass_spec, chromatography,
+                               n_cores) {
+    # get default xcms params for running IPO
+    # and modify them based on 
     # the chromatography used (hplc, uhplc) 
     # and instrument type (orbitrap,
     # qtof, qtof_hires)
@@ -76,14 +78,14 @@ get_initial_params <- function(mass_spec, chromatography) {
     # dictionaries to replace stuff with
     # Values from Patti et al 2012 metaXCMS paper
     instrument_params = list(
-    qtof = list(ppm=30, peakwidth=c(10,60), prefilter=c(0,0.1)),
-    qtof_hires = list(ppm=15, peakwidth=c(10,60), prefilter=c(0,0.1)),
-    orbitrap = list(ppm=2.5, peakwidth=c(5,20), prefilter=c(3,5000))
-    )
+        qtof = list(ppm=30, peakwidth=c(10,60), prefilter=c(0,0.1)),
+        qtof_hires = list(ppm=15, peakwidth=c(10,60), prefilter=c(0,0.1)),
+        orbitrap = list(ppm=2.5, peakwidth=c(5,20), prefilter=c(3,5000))
+        )
     chromatograph_params = list(
-    uplc = list(bw=c(2,5)),
-    hplc = list(bw=c(4,7))
-    )
+        uplc = list(bw=c(2,5)),
+        hplc = list(bw=c(4,7))
+        )
 
     # Change some of the defaults, based on type of
     # chromatography and instrument used
@@ -96,7 +98,7 @@ get_initial_params <- function(mass_spec, chromatography) {
     # Edit the parameters for IPO to optimize  
     peak_picking_params$min_peakwidth = c(min_peakwid - (min_peakwid / 2), min_peakwid + (min_peakwid / 2))
     peak_picking_params$max_peakwidth = c(max_peakwid - (max_peakwid / 2), max_peakwid + (max_peakwid / 2))
-    peak_picking_params$ppm = my_ppm + 1.5 # TODO just for testing, b/c I know that 4ppm is a decent choice
+    peak_picking_params$ppm = c(my_ppm, my_ppm + 1.5) # TODO just for testing, b/c I know that 4ppm is a decent choice
     # peak filter intensity value
     peak_picking_params$value_of_prefilter = c( prefilter_intensity - (prefilter_intensity / 3),
                                               prefilter_intensity + (prefilter_intensity / 3))
@@ -115,13 +117,32 @@ get_initial_params <- function(mass_spec, chromatography) {
     # Just require 1 sample to define a group, especially for optimization, since you're only using 5-ish samples
     retcor_params$minfrac = 0
     retcor_params$minsamp = 1
-    # TODO do I want to optimize gapInit, gapExtend, profStep?
-    #retcor_params$profStep = 1
 
+    # DEBUG do less work
+    #peak_picking_params$min_peakwidth=5
+    #peak_picking_params$max_peakwidth=20
+    #peak_picking_params$value_of_prefilter=3333.3
+    peak_picking_params$nSlaves=n_cores
+    
     return(list("peak_pick_params" = peak_picking_params, 
               "retcor_params" = retcor_params))
 }
 
+
+
+write_IPO_params <- function(ipo_params,
+                         output_file_path) {
+    # write out the un-optimized initial parameters
+    # INPUT - output_file_path - whole-path, including filename
+    #   ipo_params - named list containing parameters 
+    #     that will go into IPO
+    # First write out the most important parameters
+    output_str = sapply(names(ipo_params), 
+                        function(x) paste(x, paste(ipo_params[[x]],
+                                                collapse=" ", sep='\n'))) 
+    write(output_str, file=output_file_path)
+
+}
 
 write_params <- function(ipo_params, total_files,
                          output_file_path) {
@@ -139,8 +160,8 @@ write_params <- function(ipo_params, total_files,
 "### Peak Detection Parameters
 peak_picking\t%s
 ppm\t%s
-peak_width\t%s %s
-prefilter\t%s %s
+peak_width\t%s\t%s
+prefilter\t%s\t%s
 ",
     "CentWave", ipo_params$ppm,
     ipo_params$min_peakwidth, ipo_params$max_peakwidth,
@@ -149,11 +170,11 @@ prefilter\t%s %s
     peak_group_params = sprintf(
 "### Peak-grouping parameters
 bw\t%s
-mzwid\t%s
+mzwid\t%s\t%s
 minfrac\t%s
 minsamp\t%s
 ",  ipo_params$bw,
-    ipo_params$mzwid, 
+    ipo_params$mzwid,
     ipo_params$minfrac, 
     ceiling(total_files / 10) # default to 10% of samples as minimum needed for a group
   )
@@ -180,14 +201,18 @@ retcor_method\t%s
         # write to new line, tab-delimited
         other_params = paste(other_params, sprintf('\n%s\t%s', name, ipo_params[name]), sep='')
       }
-    print(names(ipo_params))
+    message('\nall the ipo parameters\n', names(ipo_params))
     print(other_params)
     param_string = paste(peak_pick_params,
                        peak_group_params, retcor_params,
                        other_params,
                        sep='\n')
-    print(peak_pick_params)
-    print(param_string)
+    message(peak_pick_params)
+    message('\nThis is hte output\n', param_string)
+    message('\nThis is peak_pick_params\n', peak_pick_params)
+    message('\nThis is peak_group_params\n', peak_group_params)
+    message('\nthis is retcor_params\n', retcor_params)
+    message('\n\n This is other_params\n\n', other_params)
     print('\n\n\nGonna try to write now')
     print('Path is')
     print(output_file_path)
@@ -239,7 +264,7 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         initial_param_path = file.path(local_path, output_path, sprintf('unoptimized_xcms_params_%s_%s.tsv',
                                                            study, assay_name))
         print('Trying to write params') 
-        write_params(initial_params, total_files, initial_param_path)
+        write_IPO_params(initial_params, initial_param_path)
         
         # Run IPO on peak_picking
         set.seed(1)
@@ -249,8 +274,8 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         t1 = timestamp()
         optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
                                                              params = parameters_all_assays[[assay_name]]$peak_pick_params,
-                                                             #plot=TRUE,
-                                                             #nSlaves=0  # because default is 4, which causes an error since we're using bpparam()
+                             # default nSlaves is 4, which causes cryptic fucking error because R is garbage.)
+                                                             nSlaves=0 
         )
         t2 = timestamp()
         message(paste('Started to optimize xcmsSet params at ', t1))
@@ -263,8 +288,7 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         t1 = timestamp()
         optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
                                                                       params = parameters_all_assays[[assay_name]]$retcor_params,
-                                                                      #plot=TRUE,
-                                                                      #nSlaves=0
+                                                                      nSlaves=0
                                                                       )
         t2 = timestamp()
         message(paste('Started to optimize grouping params at ', t1))
@@ -305,8 +329,8 @@ local_path = system('git rev-parse --show-toplevel', intern=TRUE)
 
 # get a named list containing the path to data and the initial xcms parameters to use
 # based on the instrument type and chromatography listed in the yaml file
-parameters_all_assays = parse_yaml(yaml_path)
-
+parameters_all_assays = parse_yaml(yaml_path, args$core)
+message('These are the parameters\n', parameters_all_assays)
 
 # then do the peak-picking optimization, write params
 # then do retcor optimization, write all the params,
