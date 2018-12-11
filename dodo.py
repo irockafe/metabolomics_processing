@@ -143,7 +143,7 @@ def task_xcms():
     for study in STUDY_DICT.keys():
         path_raw_data = RAW_DIR + '/{study}/'.format(
                 study=study)
-        yaml_file = '/home/user_input/study_info/{study}.yaml'.format(
+        yaml_file = 'user_input/study_info/{study}.yaml'.format(
                              study=study)
         # Run xcms to process the raw data
         assays = STUDY_DICT[study]
@@ -174,7 +174,7 @@ def task_xcms():
                                  ' --yaml {yaml}'.format(yaml=yaml_file) +
                                  ' --assay {assay}'.format(assay=assay) +
                                  ' --output {path}'.format(
-                                     path='/home/user_input/xcms_parameters/') +
+                                     path='user_input/xcms_parameters/') +
                                  ' --cores %i' % (CORES) +
                                  ' > "{path}/ipo.log" 2> {path}/ipo.error'.format(
                                      path=processed_output_path)
