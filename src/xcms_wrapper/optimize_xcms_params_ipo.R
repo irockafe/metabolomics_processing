@@ -249,8 +249,8 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         t1 = timestamp()
         optimized_params_peak_picking = IPO::optimizeXcmsSet(files = random_files,
                                                              params = parameters_all_assays[[assay_name]]$peak_pick_params,
-                                                             plot=TRUE,
-                                                             nSlaves=0  # because default is 4, which causes an error since we're using bpparam()
+                                                             #plot=TRUE,
+                                                             #nSlaves=0  # because default is 4, which causes an error since we're using bpparam()
         )
         t2 = timestamp()
         message(paste('Started to optimize xcmsSet params at ', t1))
@@ -263,8 +263,9 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         t1 = timestamp()
         optimized_params_retention_correction = IPO::optimizeRetGroup(xset = optimized_params_peak_picking$best_settings$xset,
                                                                       params = parameters_all_assays[[assay_name]]$retcor_params,
-                                                                      plot=TRUE,
-                                                                      nSlaves=0)
+                                                                      #plot=TRUE,
+                                                                      #nSlaves=0
+                                                                      )
         t2 = timestamp()
         message(paste('Started to optimize grouping params at ', t1))
         message(paste('Finished optimizing grouping params at ', t2))
