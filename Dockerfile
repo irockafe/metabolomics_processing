@@ -30,8 +30,8 @@ RUN apt-get update \
 # Add gcloud commands to path
 # Add /home/ to python-path so can import my code at 
 # /home/src/
-ENV PATH $PATH:/usr/local/google-cloud-sdk/bin \
-	&& PYTHONPATH=$PYTHONPATH:/home/
+ENV PATH $PATH:/usr/local/google-cloud-sdk/bin 
+ENV PYTHONPATH=$PYTHONPATH:/home/
 # copy your bashrc to docker - makes
 # developing in the container actually nice
 COPY .bashrc /root/
