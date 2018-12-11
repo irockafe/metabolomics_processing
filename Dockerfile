@@ -51,6 +51,8 @@ RUN echo "alias jupyter-notebook='jupyter-notebook --no-browser --ip=0.0.0.0 --a
 # copy your bashrc into docker
 RUN conda env create -f ./environment.yml
 SHELL ["/bin/bash", "-c"]
+# Copy vimrc
+COPY .vimrc /root/
 # run doit if you just do ">> docker-compose run -d project" 
 CMD source activate $(awk '/name:/ {print $2}' ./environment.yml) && doit &> doit.log
 #ENV PATH /opt/conda/envs/seg_map/bin/:$PATH
