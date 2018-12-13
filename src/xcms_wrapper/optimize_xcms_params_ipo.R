@@ -170,7 +170,7 @@ prefilter\t%s\t%s
     peak_group_params = sprintf(
 "### Peak-grouping parameters
 bw\t%s
-mzwid\t%s\t%s
+mzwid\t%s
 minfrac\t%s
 minsamp\t%s
 ",  ipo_params$bw,
