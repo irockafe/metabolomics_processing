@@ -133,16 +133,20 @@ get_initial_params <- function(mass_spec, chromatography,
 write_IPO_params <- function(ipo_params,
                          output_file_path) {
     # write out the un-optimized initial parameters
+    # to a yaml file
     # INPUT - output_file_path - whole-path, including filename
     #   ipo_params - named list containing parameters 
     #     that will go into IPO
     # First write out the most important parameters
-    output_str = sapply(names(ipo_params), 
-                        function(x) paste(x, paste(ipo_params[[x]],
-                                                collapse=" ", sep='\n'))) 
-    write(output_str, file=output_file_path)
+    
+    # output_str = sapply(names(ipo_params), 
+    #                    function(x) paste(x, paste(ipo_params[[x]],
+    #                                           collapse=" ", sep='\n'))) 
 
+    #write(output_str, file=output_file_path)
+    write(as.yaml(ipo_params), file=output_file_path)
 }
+
 
 write_params <- function(ipo_params, total_files,
                          output_file_path) {
@@ -151,6 +155,8 @@ write_params <- function(ipo_params, total_files,
     #   ipo_params - named list containing parameters from IPO
     # total_files - the total number of Mass-Spec files that will be processed
     #     Use this to set the minimum samples needed to define a group, and possibly to prefilter
+    # OUTPUT:
+    #   a yaml file, that can be used to provide parameters to xcms
     # First write out the most important parameters
 
     # Print out for debugging purposes
@@ -158,10 +164,14 @@ write_params <- function(ipo_params, total_files,
 
     peak_pick_params = sprintf(
 "### Peak Detection Parameters
-peak_picking\t%s
-ppm\t%s
-peak_width\t%s\t%s
-prefilter\t%s\t%s
+peak_picking: %s
+ppm: %f
+peak_width:
+   - %f
+   - %f
+prefilter: 
+   - %f
+   - %f
 ",
     "CentWave", ipo_params$ppm,
     ipo_params$min_peakwidth, ipo_params$max_peakwidth,
@@ -169,10 +179,10 @@ prefilter\t%s\t%s
   )
     peak_group_params = sprintf(
 "### Peak-grouping parameters
-bw\t%s
-mzwid\t%s
-minfrac\t%s
-minsamp\t%s
+bw: %f
+mzwid: %f
+minfrac: %f
+minsamp: %f
 ",  ipo_params$bw,
     ipo_params$mzwid,
     ipo_params$minfrac, 
@@ -181,7 +191,7 @@ minsamp\t%s
   
     retcor_params = sprintf(
     "### retention-correction parameters
-retcor_method\t%s
+retcor_method: %s
 ",
     ipo_params[['retcorMethod']]
   )
@@ -199,7 +209,18 @@ retcor_method\t%s
           next
         }
         # write to new line, tab-delimited
-        other_params = paste(other_params, sprintf('\n%s\t%s', name, ipo_params[name]), sep='')
+        # non-numeric things, write as string
+        if (!is.numeric(ipo_params[name]) ){
+            other_params = paste(other_params,
+                                 sprintf('\n%s: %s', 
+                                         name,
+                                         ipo_params[name]),
+                                 sep='')
+            # numeric things, always as float so yaml will parse
+            # nicely
+        } else {
+        other_params = paste(other_params, sprintf('\n%s: %f', name, ipo_params[name]), sep='')
+        }
       }
     message('\nall the ipo parameters\n', names(ipo_params))
     print(other_params)
@@ -220,6 +241,7 @@ retcor_method\t%s
 }
 
 
+
 run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files, output_path) {
     # GOAL: Run IPO to optimize selected xcms parameters
     # INPUT: assays: a list of assay names that should match the yaml file
@@ -233,10 +255,10 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
     #         This number will be used to set the minimum number of samples that must be in a group
     #         for xcms grouping. Default fraction is set in write_params()
     # OUTPUT: 
-    #    unoptimized parameters: /user_input/xcms_parameters/unoptimized_xcms_params_{study}_{assay}.tsv
+    #    unoptimized parameters: /user_input/xcms_parameters/unoptimized_xcms_params_{study}_{assay}.yml
     #    optimized peak parameters (Rdata)
     #    optimized retcor parameters (Rdata)
-    #    final xcms parameters (tsv): /user_input/xcms_parameters/xcms_params_{study}_{assay}.tsv
+    #    final xcms parameters (yml): /user_input/xcms_parameters/xcms_params_{study}_{assay}.yml
   
     for (assay_name in assays) { # first entry is study name
         processed_data_path = file.path(local_path, sprintf('data/processed/%s/%s/', study, assay_name))
@@ -261,9 +283,9 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
         # Write the initial, unoptimized, parameters for future reference
         initial_params = c(parameters_all_assays[[assay_name]]$peak_pick_params, 
                            parameters_all_assays[[assay_name]]$retcor_params)
-        initial_param_path = file.path(local_path, output_path, sprintf('unoptimized_xcms_params_%s_%s.tsv',
+        initial_param_path = file.path(local_path, output_path, sprintf('unoptimized_xcms_params_%s_%s.yml',
                                                            study, assay_name))
-        print('Trying to write params') 
+        print('Writing params') 
         write_IPO_params(initial_params, initial_param_path)
         
         # Run IPO on peak_picking
@@ -297,7 +319,7 @@ run_ipo <- function(assays, local_path, study, parameters_all_assays, num_files,
                                                              'optimized_retcor_params.Rdata', sep='/'))
     
         # Finally, write the best parameters out to a file
-        optimized_param_output = file.path(local_path, output_path, sprintf('xcms_params_%s_%s.tsv',
+        optimized_param_output = file.path(local_path, output_path, sprintf('xcms_params_%s_%s.yml',
                                                                study, assay_name))
         params = c(optimized_params_peak_picking$best_settings$parameters, optimized_params_retention_correction$best_settings)
         write_params(params, total_files, optimized_param_output)

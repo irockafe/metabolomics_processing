@@ -84,8 +84,8 @@ def task_clean_up():
         xcms_outputs = [os.path.join(PROCESSED_DIR, study,
                                 assay, 'xcms_result.tsv')  
                         for assay in assays]
-        delete_processed = ['rm -r /home/data/processed/{study}/{assay}/*'.format(
-            study=study, assay=assay) for assay in assays]
+        #delete_processed = ['rm -r /home/data/processed/{study}/{assay}/*'.format(
+        #    study=study, assay=assay) for assay in assays]
 
         yield {'targets': [],
                'file_dep': xcms_outputs,  # is a list - proves that ran xcms properly
@@ -93,7 +93,7 @@ def task_clean_up():
                'task_dep':['sync_to_cloud:%s' % study],
                # delete the contents of data/raw/{stud}
                # and data/processed/study/{assay}/*
-               'actions':['rm -r data/raw/%s/*' % study] + delete_processed,
+               'actions':['rm -r data/raw/%s/*' % study], # + delete_processed,
                'name': '%s' % study,
                }
 
@@ -107,8 +107,7 @@ def task_sync_to_cloud():
         xcms_param_path = '/home/user_input/xcms_parameters/'
         assays = STUDY_DICT[study]
         xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
-        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
-        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.yml')
         # go through assays (uplc_pos, uplc_neg, etc)
         # Sync raw and processed data back to aws
         raw_data_path = RAW_DIR + '/' + study
@@ -148,15 +147,13 @@ def task_xcms():
         # Run xcms to process the raw data
         assays = STUDY_DICT[study]
         xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
-        print(xcms_param_path)
-        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.tsv')
-        print('XCMS params files\n', all_xcms_params)
+        all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.yml')
         # Optimize parameters for each assay, unless a
         # parameters file already exists, then run 
         # xcms with those parameters
         for assay in assays:
             xcms_param_file = (xcms_param_path +
-                               'xcms_params_{study}_{assay}.tsv'.format(
+                               'xcms_params_{study}_{assay}.yml'.format(
                                   study=study, assay=assay))
             raw_data_path = RAW_DIR + '/%s/%s/' % (study, assay)
             processed_output_path = PROCESSED_DIR + '{study}/{assay}/'.format(
@@ -184,8 +181,6 @@ def task_xcms():
                         study=study, assay=assay)
                     }
             # Now that xcms parameters exist, run xcms
-            print 'params file', xcms_param_file
-            print 'all params files', all_xcms_params
             yield {
                 'targets': [(PROCESSED_DIR +
                             '{study}/{assay}/xcms_result.tsv'.format(
