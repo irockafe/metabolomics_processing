@@ -113,6 +113,10 @@ run_xcms = function(xcms_params, output_dir, data_dir)
   saveRDS(xset, file.path(output_dir, 'grouped.Rdata'))
   
   # Try to retention-correct
+  # As far as I know, I don't touch any of these
+  # labeled things - I'm just being extra explicit
+  # in case ppl do modify them
+  # TODO kwargs would do this better
   xset2 <- xcms::retcor(xset, 
                         method         = xcms_params$retcor_method,
                         plottype       = 'deviation', 
@@ -122,9 +126,9 @@ run_xcms = function(xcms_params, output_dir, data_dir)
                         response       = xcms_params$response, 
                         gapInit        = xcms_params$gapInit, 
                         gapExtend      = xcms_params$gapExtend,
-                        factorDiag     = xcms_params$factorDiag,
-                        factorGap      = xcms_params$factorGap, 
-                        localAlignment = xcms_params$localAlignment)
+                        factorDiag     = as.numeric(xcms_params$factorDiag),
+                        factorGap      = as.numeric(xcms_params$factorGap), 
+                        localAlignment = as.numeric(xcms_params$localAlignment))
   
   print("finished retcor!")
   
