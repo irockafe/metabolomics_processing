@@ -1,0 +1,41 @@
+min_peakwidth:
+- 5.0
+- 15.0
+max_peakwidth:
+- 30.0
+- 90.0
+ppm:
+- 15.0
+- 16.5
+mzdiff: -0.001
+snthresh: 10.0
+noise: 0.0e+00
+prefilter: 0.0e+00
+value_of_prefilter:
+- 0.0666667
+- 0.1333333
+mzCenterFun: wMean
+integrate: 1.0
+fitgauss: no
+verbose.columns: no
+nSlaves: 6
+distFunc: cor_opt
+gapInit: 0.3
+gapExtend: 2.4
+profStep: 1.0
+plottype: none
+response: 1.0
+factorDiag: 2.0
+factorGap: 1.0
+localAlignment: 0.0e+00
+retcorMethod: obiwarp
+bw:
+- 2.0
+- 5.0
+minfrac: 0.0e+00
+mzwid:
+- 0.015
+- 0.035
+minsamp: 1.0
+max: 50.0
+

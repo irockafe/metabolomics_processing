@@ -1,0 +1,28 @@
+min_peakwidth 2.5 7.5
+max_peakwidth 10 30
+ppm 2.5 4
+mzdiff -0.001
+snthresh 10
+noise 0
+prefilter 0
+value_of_prefilter 3333.33333333333 6666.66666666667
+mzCenterFun wMean
+integrate 1
+fitgauss FALSE
+verbose.columns FALSE
+nSlaves 4
+distFunc cor_opt
+gapInit 0.3
+gapExtend 2.4
+profStep 1
+plottype none
+response 1
+factorDiag 2
+factorGap 1
+localAlignment 0
+retcorMethod obiwarp
+bw 2 5
+minfrac 0
+mzwid 0.015 0.035
+minsamp 1
+max 50

@@ -1,0 +1,40 @@
+### Peak Detection Parameters
+peak_picking: CentWave
+ppm: 23.250000
+peak_width:
+   - 7.112000
+   - 171.600000
+prefilter: 
+   - 0.000000
+   - 1.090260
+
+### Peak-grouping parameters
+bw: 2.000000
+mzwid: 0.029000
+minfrac: 0.000000
+minsamp: 13.000000
+
+### retention-correction parameters
+retcor_method: obiwarp
+
+### Other parameters
+mzdiff: -0.001
+snthresh: 10
+noise: 0
+mzCenterFun: wMean
+integrate: 1
+fitgauss: FALSE
+verbose.columns: FALSE
+nSlaves: 6
+distFunc: cor_opt
+gapInit: 0.3
+gapExtend: 2.4
+profStep: 1
+plottype: none
+response: 1
+factorDiag: 2
+factorGap: 1
+localAlignment: 0
+retcorMethod: obiwarp
+max: 50
+center: 4
