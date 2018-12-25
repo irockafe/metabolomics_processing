@@ -232,7 +232,8 @@ def slice_and_predict(df, y, rt_window, not_samples, rf_estimators=1000,
                       roc_path='/home/irockafe/Desktop/roc.pdf',
                       ):
     '''
-    PURPOSE:
+    PURPOSE: Slice mass-spec run into time-windows, then using
+        that subset, try to predict outcome
     INPUT:
         df -
             pandas dataframe, from xcms, that includes columns with 'mz'

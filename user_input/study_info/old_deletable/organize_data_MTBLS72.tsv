@@ -1,3 +1,0 @@
-PATH	data/processed/MTBLS72/mzml_raw_centroided/
-positive_mode	*POS*.mzML
-negative_mode	*NEG*.mzML

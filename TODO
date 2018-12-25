@@ -1,3 +1,5 @@
+- Should output logs to non-data folder b/c I don't track data folders
+
 - Preliminary data exploration
    - simple pCoA plots of classes
 - Preprocessing steps
