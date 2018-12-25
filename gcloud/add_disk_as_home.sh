@@ -3,7 +3,8 @@ DEVICE_ID="/dev/sdb"
 MOUNT="/mnt/disk/disk"
 
 # Format the disk
-sudo mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard $DEVICE_ID
+# This will delete anything on the disk, so it is commented out by default
+#sudo mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard $DEVICE_ID
 
 sudo mkdir -p $MOUNT
 sudo mount -o discard,defaults $DEVICE_ID $MOUNT

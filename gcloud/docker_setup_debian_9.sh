@@ -27,7 +27,7 @@ wait
 # had to use ps -aux | grep apt to find the process, kill it and restart from here
 sudo apt-get update
 wait
-sudo apt-get install docker-ce
+sudo apt-get install docker-ce=18.06.0.ce
 wait
 # Make the root directory for data storage in /home/
 # (the same place where data volume is mounted)
