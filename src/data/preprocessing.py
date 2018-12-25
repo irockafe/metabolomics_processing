@@ -5,7 +5,7 @@ import mwtab
 from sklearn import preprocessing
 
 # My code
-import data.mwtab_fxns as my_mwtab
+import src.data.mwtab_fxns as my_mwtab
 
 
 def prevalence_threshold(df, threshold=0.5):
