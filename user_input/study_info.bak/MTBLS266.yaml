@@ -1,0 +1,42 @@
+MTBLS266:
+    assays:
+        plasma_hilic_pos:
+            files:
+                - "*POS*.mzML"
+            chromatography:
+                "hplc"
+            mass_spectrometer:
+                "orbitrap"
+            instrument_name:
+                "Thermo-Fisher LTQ Orbitrap"
+            data_path:
+                "data/raw/MTBLS266/plasma_hilic_pos"
+            column:
+                "HILIC"
+            ion_mode:
+                "positive"
+            ion_source:
+                "ESI"
+            fluid:
+                "plasma"
+        plasma_hilic_neg:
+            files:
+                - "*NEG*.mzML"
+            chromatography:
+                "hplc"
+            mass_spectrometer:
+                "orbitrap"
+            instrument_name:
+                "Thermo-Fisher LTQ Orbitrap"
+            data_path:
+                "data/raw/MTBLS266/plasma_hilic_neg"
+            column:
+                "HILIC"
+            ion_mode:
+                "negative"
+            ion_source:
+                "ESI"
+            fluid:
+                "plasma"
+    disease:
+        "aging"

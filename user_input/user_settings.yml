@@ -1,0 +1,2 @@
+cloud_provider: google
+storage: gs://mass-spec/

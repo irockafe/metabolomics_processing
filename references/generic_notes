@@ -1,0 +1,1 @@
+can do sudo chown -R $USER directory_name/ to change ownership and avoid annoying gcloud permissions snaffus

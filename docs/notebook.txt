@@ -1,0 +1,35 @@
+# Just a place to put what I did so I can look back on it
+# and feel good in the face of an ever-expanding amount of work
+*--------
+12/18/2018
+Wrote code to 
+  - plot feature sparsity
+  - tidy xcms data
+  - breakdown categorical plots (violins, boxplots)
+     into subplots that are more readable than one
+     60+ entry plot
+  - a class to organize xcms data that can:
+    - map sample names to class labels from Metabolights projects with
+      a_*.txt and s_*.txt files.
+    - encode the sample values for sklearn stuff
+    - remove the prefixes xcms seems to give all filenames things
+    - 
+*-------
+12/19/2018
+Wrote code to
+  - plot mean feature intensity between classes
+  - plot feature sparsity between classes
+  - do 2-sample stat tests (mann-whitney) on a dataframe
+  - worked-around a weird bug in pd.df.fillna() - 
+       nans weren't being
+       filled when passed a series, so just passed 1/2 the 
+       min value of entire dataframe to replace 0's
+    - Should I just keep the zero's?
+*---------
+12/20/2018
+Wrote code to
+  - stratify feature table based on some criteria and plot hist of pvals
+
+*---------
+12/25/2018
+Weird docker error started happening. Trying to start with a fresh start-up disk...
