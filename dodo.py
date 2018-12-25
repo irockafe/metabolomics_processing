@@ -31,7 +31,7 @@ RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
 CORES = multiprocessing.cpu_count()
 USER_INFO = project_fxns.Storage()
-STORAGE_PATH = USER_INFO.storage_path
+CLOUD_PATH = USER_INFO.cloud_url_base
 organize_dir = LOCAL_PATH + '/user_input/study_info/'
 file_organizers = glob.glob(organize_dir + '*.yaml')
 # get a dictionary of {study: [assay1, assay2]}
@@ -110,8 +110,8 @@ def task_sync_to_cloud():
         all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.yml')
         # go through assays (uplc_pos, uplc_neg, etc)
         # Sync raw and processed data back to aws
-        raw_data_path = RAW_DIR + '/' + study
-        processed_data_path = PROCESSED_DIR + '/' + study
+        raw_data_path = os.path.join(RAW_DIR, study)
+        processed_data_path = os.path.join(PROCESSED_DIR, study)
         # Only sync if sync if in a supported cloud
         if USER_INFO.cloud_provider in ['amazon', 'google']:  
             # the xcms output files
@@ -121,15 +121,20 @@ def task_sync_to_cloud():
             yield {# Should I have targets for this?
                    'targets': [],
                    # adding two lists of strings makes another list
-                   # Should all project_fxns to this, but
+                   # Should add project_fxns to this, but
                    # don't want to rerun everything until finalized
                    'file_dep': xcms_outputs + ['src/data/download_study.py'],
                    'task_dep': ['xcms:run_xcms_{study}_{assay}'.format(study=study,
                                                           assay=assay)],
-                   # Sync to cloud storage - raw data and processed data
+                   # Sync to cloud storage - raw data, processed data,
+                   # and newly defined parameters (user_input folder)
                    'actions': [
-                       (storage_fxns.sync_to_storage, [raw_data_path]),
-                       (storage_fxns.sync_to_storage, [processed_data_path])
+                       (storage_fxns.sync_to_storage, [raw_data_path, 
+                           raw_data_path.replace('/home/', '')]),
+                       (storage_fxns.sync_to_storage, [processed_data_path,
+                           processed_data_path.replace('/home/', '')]),
+                       (storage_fxns.sync_to_storage, ['/home/user_input',
+                           'user_input'])
                        ],
                    'name': '%s' % study
                    }
