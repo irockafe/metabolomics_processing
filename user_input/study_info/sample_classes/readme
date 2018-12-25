@@ -1,0 +1,10 @@
+Where I might put maps between sampleID and classID if I can't program it
+
+{study}_{assay}:
+   {class_name}:
+      - {xcms_column name/filename}
+      - {xcms_column name/filename}
+   {class_name_2}:
+      - {xcms_column name/filename}
+      - {xcms_column name/filename}
+      

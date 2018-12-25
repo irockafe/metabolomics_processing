@@ -1,0 +1,35 @@
+### Needs to be processed through msconvert
+# TODO - automate msconvert somehow..?
+# So this needs some updating
+MTBLS72:
+    organize:
+        - "unzip *.zip"
+    assays:
+        pos:
+            files:
+                - "*POS*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            column:
+                "C18"
+            data_path:
+                "data/raw/MTBLS72/pos/"
+            fluid:
+                "plasma"
+        neg:
+            files:
+                - "*NEG*.mzML"
+            chromatography:
+                "uplc"
+            mass_spectrometer:
+                "qtof_hires"
+            column:
+                "C18"
+            data_path:
+                "data/raw/MTBLS72/neg/"
+            fluid:
+                "plasma"
+    disease:
+        - "alzheimers"

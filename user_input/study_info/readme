@@ -29,6 +29,9 @@ by scripts to find values:
                   # be able to filter studies by the column used
          data_path:  # Where the raw data for this assay will be
                      # Generally will be data/raw/{study}/{assay}
+         class_label_column: # The column in Metabolights Sample Definitions 
+                     # file (s_*.txt), that lists the class of each sample
+                     # i.e. sick/healthy, 
    disease:  # list of tags that describe the disease 
                   
           

@@ -1,9 +1,9 @@
 {study}:
-    organize: {unzip commands, etc}
     assays:
         {assay_name}:
             files:
                 - {mv_commands}
+		- {zip commands, other bash commands}
             chromatography:
                 {uplc, hplc}
             column:
@@ -12,3 +12,7 @@
                 {qtof, qtof_hires, orbitrap}
             data_path:
                 "data/raw/{study}/{assay}"
+            class_label_column: 
+                {"Factor Value[disease]"} # varies with each study	
+                # the column that has sample names?
+disease: {disease name}

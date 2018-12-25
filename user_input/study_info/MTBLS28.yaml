@@ -19,24 +19,27 @@ MTBLS28:
                 "ESI"
             fluid:
                 "urine"    
-        c18_neg:
-            files:
-                - "*NEG*.mzML"
-            chromatography:
-                "uplc"
-            mass_spectrometer:
-                "qtof_hires"
-            instrument_name:
-                "Waters QTOF Premier"
-            data_path:
-                "data/raw/MTBLS28/c18_neg"
-            column:
-                "C18"
-            ion_mode:
-                "negative"
-            ion_source:
-                "ESI"
-            fluid:
-                "urine"
+                # Corrupt files appear to be present,
+                # see ipo.error and README_FAIL
+                # in /data/processed/MTBLS28/c18_neg
+                #        c18_neg:
+                #            files:
+                #                - "*NEG*.mzML"
+                #            chromatography:
+                #                "uplc"
+                #            mass_spectrometer:
+                #                "qtof_hires"
+                #            instrument_name:
+                #                "Waters QTOF Premier"
+                #            data_path:
+                #                "data/raw/MTBLS28/c18_neg"
+                #            column:
+                #                "C18"
+                #            ion_mode:
+                #                "negative"
+                #            ion_source:
+                #                "ESI"
+                #            fluid:
+                #                "urine"
     disease:
         "lung cancer"
