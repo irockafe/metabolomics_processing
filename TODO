@@ -1,6 +1,21 @@
-make project_fxns generic, and copy over some of the ones from
-download.py
+- Preliminary data exploration
+   - simple pCoA plots of classes
+- Preprocessing steps
+   - pipeline:
+   - filtering
+      *- pval statificatoin by intensity, mz, r/t, etc
+   - normalization
+   - scaling
+- classifier(s?)
 
-task-dependencies and reverse order the tasks themselves
 
+- Each study will have its own .py file and will use xcms_analyze.py fxns in order to pre-process the data appropriately and to double check the data itself. I don't need to automate everything, silly.
 
+- add logging - want a folder - logs/ where study_name.log holds info for each thing I ran
+
+### Stuff that might not be worth it ###
+change dodo.py functions into calling python functions instead of command line stuff - makes logging easier ..Worth it? Probably not
+
+Speed up downloads by bash-parallelizing: getting list of files, splitting it, and running according to number of cores
+
+Download the study info you need, avoid the rest, using yaml specifications
