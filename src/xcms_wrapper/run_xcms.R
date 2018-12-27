@@ -147,6 +147,7 @@ run_xcms = function(xcms_params, output_dir, data_dir)
   
   # Fill in peaks that weren't detected
   xset3 <- xcms::fillPeaks(xset2)
+  saveRDS(xset3, file.path(output_dir, 'grouped_retcor_peakfilled.Rdata'))
   print("Finished filling peaks!")
   print(xset3)
   # Move back to output_dir and write out your feature table
