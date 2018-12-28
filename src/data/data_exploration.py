@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 # and get a feel for it
 
 
-def plot_feature_sparsity(data, class_dict=None):
+def plot_feature_sparsity(data, class_dict=None, fxn=None,  **kwargs):
     # data is in (samples x features)
     # sum all nans in each sample (true zeros)
     # divide by num_samples
     # class_dict - splits feature table
+    '''
     if class_dict:
         axes = []
         legend_entries = []
@@ -21,18 +22,22 @@ def plot_feature_sparsity(data, class_dict=None):
             axes.append(ax)
         ax.legend(legend_entries, bbox_to_anchor=(1.05, 1.05))
         return axes
+    '''
 
     # Assume anything lower than 1e-10 is floating-point zero
     sparsity = (data < 1e-15).sum(axis=1) / data.shape[1]
-    ax = sns.distplot(sparsity)
+    axes = distplot_classes(sparsity, class_dict, fxn=fxn, **kwargs)
+    '''
+    ax = sns.distplot(sparsity, **kwargs)
     ax.set_ylabel('Count')
     ax.set_xlabel('Feature Sparsity (sparse/total)')
-    return ax
+    '''
+    return axes
 
 
-def plot_mean_intensity(data, fxn, class_dict=None, **kwargs):
+def distplot_classes(data, class_dict=None, fxn=None, **kwargs):
     # plot feautre distribution - could be mean intensity by passing mean
-    # stdev by passing 
+    # stdev by passing
     # **kwargs for the distplot command
     if class_dict:
         legend_entries = []
@@ -40,15 +45,21 @@ def plot_mean_intensity(data, fxn, class_dict=None, **kwargs):
         for k, v in class_dict.iteritems():
             print(k)
             legend_entries.append(k)
-            ax = plot_mean_intensity(data.loc[v], fxn, **kwargs)
+            ax = distplot_classes(data.loc[v], fxn=fxn, **kwargs)
             axes.append(ax)
         ax.legend(legend_entries, loc='best')#$bbox_to_anchor=(1.2, 0.9))
         return axes
-    ax = sns.distplot(fxn(data, axis=0), **kwargs)
-    return ax
+    # take the mean, std, etc of data
+    # or don't
+    if fxn:
+        ax = sns.distplot(fxn(data), **kwargs)
+        return ax
+    elif not fxn:
+        ax = sns.distplot(data, **kwargs)
+        return ax
 
 
-def two_group_stat(data, class_dict, fxn):
+def two_group_stat(data, class_dict, fxn, **kwargs):
     # run any-ish two group stat-test
     # that looks like fxn(x,y)
     # I'm using mann-whitney
@@ -59,15 +70,15 @@ def two_group_stat(data, class_dict, fxn):
                 (lambda col: (
                     fxn(
                         col.loc[class_dict[keys[0]]],
-                        col.loc[class_dict[keys[1]]]
-                        )
+                        col.loc[class_dict[keys[1]]],
+                        **kwargs)
                     )
                 ),
                 axis=0)
     return stat
 
-    
-def fill_zero_nan(data, 
+
+def fill_zero_nan(data,
         zero_fill=None):
     # fill zeros and nans in a dataframe
     # default is to fill each sample with 1/2 the minimum intensity
@@ -84,8 +95,10 @@ def tidy(data):
                           ))
     return tidy_data
 
-def plot_categorical_split(tidy_data, sample_names, 
-        axes, step, class_name=None, plot_type=sns.boxplot): 
+def plot_categorical_split(tidy_data, sample_names,
+        axes, step, class_name=None, plot_type=sns.boxplot,
+        ylabel='y', xlabel='x',
+        **kwargs):
     # helper fxn
     # split up plotting lots of categorical things
     # i.e. violin plots boxplots, etcss
@@ -94,8 +107,8 @@ def plot_categorical_split(tidy_data, sample_names,
     for grp in groups:
         ax = plot_type(x='index', y='value',
             data=tidy_data, order=grp)
-        ax.set_ylabel('Intensity')
-        ax.set_xlabel('Sample')
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
         if class_name:
             ax.set_title('Class: %s' % class_name)
         axes.append(ax)
@@ -118,9 +131,10 @@ def save_axes(axes_list, base_path,
             ax.figure.savefig(filepath)
 
 
-def sample_feature_intensity(tidy_data, 
-        class_dict=None, step=10, plot_type=sns.boxplot
-        ):
+def sample_feature_intensity(tidy_data,
+        class_dict=None, step=10, plot_type=sns.boxplot,
+        ylabel='', xlabel='',
+        **kwargs):
     # plot a max of {step} violin plots per plot
     # separate by class labels if a dict given
     # class_dict: {'malaria': [100_P, 101_P], 'healthy': [200_P, 201_P]}
@@ -128,21 +142,26 @@ def sample_feature_intensity(tidy_data,
     if class_dict:
         for k, v in class_dict.iteritems():
             axes = plot_categorical_split(tidy_data,
-                    v, axes, step, class_name=k, 
-                    plot_type=plot_type)
+                    v, axes, step, class_name=k,
+                    plot_type=plot_type,
+                    ylabel=ylabel, xlabel=xlabel,
+                    **kwargs)
     else:
         sample_names = tidy_data['index'].unique()
         axes = plot_categorical_split(tidy_data,
                 sample_names, axes, step,
-                plot_type=plot_type) 
+                plot_type=plot_type,
+                ylabel=ylabel, xlabel=xlabel,
+                **kwargs)
     return axes
 
 
-def plot_pvals_stratified(data, covar, stats,
-        covar_name, ngroups=6, n_cols=3, **kwargs):
-    # data (samples x feats)
+def plot_pvals_stratified(covar, stats,
+        covar_name='Covariate', ngroups=6, n_cols=3,
+        title_fxn=np.log10, **kwargs):
     # covar series, index is features142G
     # stats - pd.Series of statistics indexed by feature
+    #     covar and stats must have same index
     # ngroups - number of groups to split it into
     # TODO bug when plotting a single row of plots
     #   currently just ignore it
@@ -151,26 +170,40 @@ def plot_pvals_stratified(data, covar, stats,
     n_rows = np.ceil(ngroups/n_cols)
     fig, axes = plt.subplots(int(n_rows), int(n_cols),
             sharex=True, sharey=True)
+    fig.suptitle(covar_name)
     for i, grp in enumerate(groups):
         strat_stat = stats[grp.index]
         row=  np.floor(i/n_cols)
         col = i%n_cols  # remainder
         try:
-            ax = sns.distplot(strat_stat, kde=False, 
+            ax = sns.distplot(strat_stat, kde=False,
                     ax=axes[int(row), int(col)], **kwargs)
         except:
             print(('A bug I havent fixed means that'
                 ' you must give ngroups > n_cols. Currently'
                 ' ngroups=%s n_cols=%s' % (ngroups, n_cols)))
             raise
-        ax.set_title(i)
+        # Default is to show the log_10 differences
+        # if specified
+        if title_fxn:
+            ax.set_title('{strat}: {mini:.1f}:{maxi:.1f}'.format(
+                strat=i, mini=title_fxn(grp.min()), maxi=title_fxn(grp.max())
+                )
+            )
+        elif title_fxn == None:
+            ax.set_title('{strat}: {mini:.1f}:{maxi:.1f}'.format(
+                strat=i, mini=grp.min(), maxi=grp.max()
+                )
+            )
+
+
         # first plot, add ylabel
         if i == 0:
             ax.set_ylabel('Count')
         # bottom row of plots, add xlabel
         if i == (n_rows*n_cols - n_cols):
-            ax.set_xlabel(covar_name)
+            ax.set_xlabel('pval')
     return axes
 
-        
+
 
