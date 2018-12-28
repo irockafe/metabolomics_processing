@@ -6,7 +6,6 @@
    - pipeline:
    - filtering
       *- pval statificatoin by intensity, mz, r/t, etc
-   - normalization
    - scaling
 - classifier(s?)
 
