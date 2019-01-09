@@ -72,7 +72,7 @@ target/
 # exclude data from source control by default
 /data/
 .notes*
-
+/presentations/
 # Exclude user-specific information: the local path, s3_path
 user_settings.tab
 # Exclude pydoit database files, they only matter locally

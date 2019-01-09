@@ -12,30 +12,14 @@ def plot_feature_sparsity(data, class_dict=None, fxn=None,  **kwargs):
     # sum all nans in each sample (true zeros)
     # divide by num_samples
     # class_dict - splits feature table
-    '''
-    if class_dict:
-        axes = []
-        legend_entries = []
-        for k, v in class_dict.iteritems():
-            legend_entries.append(k)
-            ax = plot_feature_sparsity(data.loc[v])
-            axes.append(ax)
-        ax.legend(legend_entries, bbox_to_anchor=(1.05, 1.05))
-        return axes
-    '''
-
-    # Assume anything lower than 1e-10 is floating-point zero
+    # Assume anything lower than 1e-15 is floating-point zero
     sparsity = (data < 1e-15).sum(axis=1) / data.shape[1]
     axes = distplot_classes(sparsity, class_dict, fxn=fxn, **kwargs)
-    '''
-    ax = sns.distplot(sparsity, **kwargs)
-    ax.set_ylabel('Count')
-    ax.set_xlabel('Feature Sparsity (sparse/total)')
-    '''
     return axes
 
 
-def distplot_classes(data, class_dict=None, fxn=None, **kwargs):
+def distplot_classes(data, class_dict=None, plt_fxn=sns.distplot,
+                     fxn=None, **kwargs):
     # plot feautre distribution - could be mean intensity by passing mean
     # stdev by passing
     # **kwargs for the distplot command
@@ -45,17 +29,19 @@ def distplot_classes(data, class_dict=None, fxn=None, **kwargs):
         for k, v in class_dict.iteritems():
             print(k)
             legend_entries.append(k)
-            ax = distplot_classes(data.loc[v], fxn=fxn, **kwargs)
+            ax = distplot_classes(data.loc[v],
+                                  plt_fxn=plt_fxn,
+                                  fxn=fxn, **kwargs)
             axes.append(ax)
         ax.legend(legend_entries, loc='best')#$bbox_to_anchor=(1.2, 0.9))
         return axes
     # take the mean, std, etc of data
     # or don't
     if fxn:
-        ax = sns.distplot(fxn(data), **kwargs)
+        ax = plt_fxn(fxn(data), **kwargs)
         return ax
     elif not fxn:
-        ax = sns.distplot(data, **kwargs)
+        ax = plt_fxn(data, **kwargs)
         return ax
 
 
@@ -95,6 +81,7 @@ def tidy(data):
                           ))
     return tidy_data
 
+
 def plot_categorical_split(tidy_data, sample_names,
         axes, step, class_name=None, plot_type=sns.boxplot,
         ylabel='y', xlabel='x',
@@ -114,6 +101,7 @@ def plot_categorical_split(tidy_data, sample_names,
         axes.append(ax)
         plt.show()
     return axes
+
 
 def save_axes(axes_list, base_path,
         file_names, ftype='pdf'):
@@ -204,6 +192,5 @@ def plot_pvals_stratified(covar, stats,
         if i == (n_rows*n_cols - n_cols):
             ax.set_xlabel('pval')
     return axes
-
 
 

@@ -1,3 +1,7 @@
+# This is the minimum information necessary to process the datasets
+# see the readme for more specific information
+# Items in '{}' change with each project. If there's a list of 
+# items in variables, those are your options for that variable currently
 {study}:
     assays:
         {assay_name}:
