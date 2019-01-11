@@ -4,8 +4,14 @@ import yaml
 import glob
 import multiprocessing
 import logging
+import doit
 # my code
 import src.project_fxns.project_fxns as project_fxns
+
+# To run: >> doit study={study_name}
+# where study_name is from Metabolights or Metabolomics Workbench.
+# doit will run IPO to generate decent xcms parameters and then xcms
+# using those parameters
 
 # TODO!!! when Rscript fails, it doesn't crash doit. This is annoying and dumb
 #       If next tasks depend on that file, fine. it'll crash eventually, but
@@ -16,6 +22,7 @@ import src.project_fxns.project_fxns as project_fxns
 #  figure out how to make the timestamps be modified time instead
 # TODO - make sure you run a script to create user_settings.py
 # first
+# TODO - CAMERA
 
 # pydoit file to track dependencies
 # and automagically update when things become out of date
@@ -33,16 +40,29 @@ CORES = multiprocessing.cpu_count()
 USER_INFO = project_fxns.Storage()
 CLOUD_PATH = USER_INFO.cloud_url_base
 organize_dir = LOCAL_PATH + '/user_input/study_info/'
-file_organizers = glob.glob(organize_dir + '*.yaml')
+
+# Get the study name from command line
+# raise an error if they leave out the study parameter
+study_name = doit.get_var('study')
+if study_name == None:
+    raise ValueError, ('\nYou need to pass the parameter "study"'+
+            ' to doit.\n\tExample: doit study=MTBLS315')
+
+
+# Get the summary file for the study & raise error if doesn't exist
+summary_file = os.path.join(organize_dir + '%s.yaml' % study_name)
+if not os.path.isfile(summary_file):
+    raise IOError(('\nCould not find file {sf} \nRemember, you need' +
+            ' to provide the yaml file in /user_input/study_info/'+
+            ' for proper processing').format(sf=summary_file))
 # get a dictionary of {study: [assay1, assay2]}
 # i.e. {MTBLS315: [pos, neg], ...}
 STUDY_DICT = {}
-for f in file_organizers:
-    my_yaml = yaml.load(file(f, 'r'))
-    # First entry should be for a single experiment ID
-    # i.e. MTBLS315
-    study_name = my_yaml.keys()[0]
-    STUDY_DICT[study_name] = my_yaml[study_name]['assays'].keys()
+my_yaml = yaml.load(file(summary_file, 'r'))
+# First entry should be for a single experiment ID
+# i.e. MTBLS315
+study_name = my_yaml.keys()[0]
+STUDY_DICT[study_name] = my_yaml[study_name]['assays'].keys()
 
 
 # Useful Functions ################
@@ -82,7 +102,7 @@ def task_clean_up():
     for study in STUDY_DICT.keys():
         assays = STUDY_DICT[study]
         xcms_outputs = [os.path.join(PROCESSED_DIR, study,
-                                assay, 'xcms_result.tsv')  
+                                assay, 'xcms_result.tsv')
                         for assay in assays]
         #delete_processed = ['rm -r /home/data/processed/{study}/{assay}/*'.format(
         #    study=study, assay=assay) for assay in assays]
@@ -113,7 +133,7 @@ def task_sync_to_cloud():
         raw_data_path = os.path.join(RAW_DIR, study)
         processed_data_path = os.path.join(PROCESSED_DIR, study)
         # Only sync if sync if in a supported cloud
-        if USER_INFO.cloud_provider in ['amazon', 'google']:  
+        if USER_INFO.cloud_provider in ['amazon', 'google']:
             # the xcms output files
             xcms_outputs = [os.path.join(PROCESSED_DIR, study,
                                 assay, 'xcms_result.tsv')  for assay in assays]
@@ -129,7 +149,7 @@ def task_sync_to_cloud():
                    # Sync to cloud storage - raw data, processed data,
                    # and newly defined parameters (user_input folder)
                    'actions': [
-                       (storage_fxns.sync_to_storage, [raw_data_path, 
+                       (storage_fxns.sync_to_storage, [raw_data_path,
                            raw_data_path.replace('/home/', '')]),
                        (storage_fxns.sync_to_storage, [processed_data_path,
                            processed_data_path.replace('/home/', '')]),
@@ -154,7 +174,7 @@ def task_xcms():
         xcms_param_path = (LOCAL_PATH + '/user_input/xcms_parameters/')
         all_xcms_params = glob.glob(xcms_param_path + 'xcms_params*.yml')
         # Optimize parameters for each assay, unless a
-        # parameters file already exists, then run 
+        # parameters file already exists, then run
         # xcms with those parameters
         for assay in assays:
             xcms_param_file = (xcms_param_path +
@@ -194,10 +214,10 @@ def task_xcms():
                 'file_dep': ['src/xcms_wrapper/run_xcms.R',
                              xcms_param_file
                               ],
-                # Don't depend on optimize params task, 
-                # b/c you might import params from elsewhere, 
+                # Don't depend on optimize params task,
+                # b/c you might import params from elsewhere,
                 # without needing to run IPO
-                'task_dep': ['organize_data:%s' % study], 
+                'task_dep': ['organize_data:%s' % study],
                 'actions': ['mkdir -p "{path}"'.format(path=processed_output_path),
                             ('Rscript src/xcms_wrapper/run_xcms.R ' +
                              ' --summaryfile "%s" ' % xcms_param_file +
@@ -211,7 +231,7 @@ def task_xcms():
                 'name': 'run_xcms_{study}_{assay}'.format(study=study,
                                                           assay=assay)
             }
-           
+
 
 
 
@@ -219,7 +239,7 @@ def task_organize_data():
     for study in STUDY_DICT.keys():
         path_raw_data = RAW_DIR + '/{study}/'.format(
                 study=study)
-        
+
         # Organize the raw data
         org_script = 'src/data/organize_raw_data.py'
         yaml_file = ('/home/user_input/study_info/{study}.yaml'.format(
@@ -255,7 +275,7 @@ def task_download_data():
             # No task_deps, should be first thing
             'task_dep':[],
             'actions': ['mkdir -p "%s"' % path_raw_data,
-                        ('python "%(dependencies)s" ' + '--study %s' % study 
+                        ('python "%(dependencies)s" ' + '--study %s' % study
                          )],
             'name': '%s' % study
                 }
