@@ -8,7 +8,8 @@ import doit
 # my code
 import src.project_fxns.project_fxns as project_fxns
 
-# To run: >> doit study={study_name}
+# To run: >> doit study={study_name} cores={num_cores}
+
 # where study_name is from Metabolights or Metabolomics Workbench.
 # doit will run IPO to generate decent xcms parameters and then xcms
 # using those parameters
@@ -36,7 +37,8 @@ DOIT_CONFIG = {'check_file_uptodate': 'timestamp_newer',
 LOCAL_PATH = os.getcwd()  # In container, this is /home/
 RAW_DIR = LOCAL_PATH + '/data/raw/'
 PROCESSED_DIR = LOCAL_PATH + '/data/processed/'
-CORES = multiprocessing.cpu_count()
+# IPO only uses 5 processors and is the bulk of the time
+CORES = int(doit.get_var('cores'))
 USER_INFO = project_fxns.Storage()
 CLOUD_PATH = USER_INFO.cloud_url_base
 organize_dir = LOCAL_PATH + '/user_input/study_info/'

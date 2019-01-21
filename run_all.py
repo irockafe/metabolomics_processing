@@ -35,7 +35,7 @@ def pop_stopped_containers(container_list):
         try:
             container.reload()
         except docker.errors.NotFound:
-            continue    
+            continue
 
         if container.status == 'exited':
             try:
@@ -52,17 +52,27 @@ def pop_stopped_containers(container_list):
 
         if container.status != 'exited':
             updated_container_lst.append(container)
-            
+
     return updated_container_lst
-            
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', '--paralellism', 
+parser.add_argument('-p', '--paralellism',
     help=('The number of parallel processes you want to start. Each will'
         ' start a new pydoit run for a different study')
     )
+parser.add_argument('-c', '--cores',
+                    help=('Number of cores used during the xcms phase.'
+                          'Note that IPO uses 5 cores and, by far, takes the'
+                          ' most amount of time right now. Using more than 5'
+                          ' will cost more money without much speedup until'
+                          ' you parallelize IPO somehow'
+                          )
+                    )
 args = parser.parse_args()
 parallelism = int(args.paralellism)
+cores = int(args.cores)
+
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 # get all the summaryfiles with glob
@@ -87,9 +97,9 @@ for sf in summary_files:
     cmd = ('''/bin/bash'''
            ''' -c "source activate'''
            ''' $(awk '/name:/ {print $2}' ./environment.yml)'''
-           ''' && doit study=%s'''
+           ''' && doit study=%s cores=%i'''
            ''' &>> logs/doit_%s.log"''' #% study
-           ) % (study, study)
+           ) % (study, cores, study)
     # Start a container with the right image and command
     # and volume
     container = client.containers.run(img_id, command=cmd,
@@ -106,4 +116,4 @@ for sf in summary_files:
         # wait until one of the containers ends
         time.sleep(60)
         container_list = pop_stopped_containers(container_list)
-        
+
